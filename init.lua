@@ -176,9 +176,13 @@ smartshop.update_info=function(pos)
 			--if string.find(stuff["name" ..i],":")~=nil then
 			--	stuff["name" ..i]=stuff["name" ..i].split(stuff["name" ..i],":")[2]
 		   --end
-		        stuff["name"..i] = core.registered_items[stuff["name"..i]].description
-			stuff["buy" ..i]="(" ..stuff["buy" ..i] ..") "
-			stuff["name" ..i]=stuff["name" ..i] .."\n"
+		   if core.registered_items[stuff["name"..i]] then
+		      stuff["name"..i] = core.registered_items[stuff["name"..i]].description
+		   else
+		      stuff["name"..i] = "Unknown Object"
+		   end
+		   stuff["buy" ..i]="(" ..stuff["buy" ..i] ..") "
+		   stuff["name" ..i]=stuff["name" ..i] .."\n"
 		end
 	end
 		meta:set_string("infotext",
