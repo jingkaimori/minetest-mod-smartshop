@@ -390,7 +390,7 @@ on_construct = function(pos)
 		meta:get_inventory():set_size("pay3", 1)
 		meta:get_inventory():set_size("give4", 1)
 		meta:get_inventory():set_size("pay4", 1)
-		meta:set_int("ghost", 0)
+		meta:set_int("ghost", 1)
 	end,
 on_rightclick = function(pos, node, player, itemstack, pointed_thing)
 		smartshop.showform(pos,player)
