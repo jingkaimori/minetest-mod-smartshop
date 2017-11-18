@@ -102,10 +102,12 @@ smartshop.receive_fields=function(player,pressed)
 					-- end
 					if meta:get_int("ghost") ~=1 then
 					   -- transition shops to ghost inventory.
-					   if inv:room_for_item("main", pay) and inv:room_for_item("main", stack) then
-					      meta:set_int("ghost", 1)
-					      inv:add_item("main", pay)
-					      inv:add_item("main", stack)
+					   for i=1,4 do
+					      if inv:room_for_item("main", "pay"..i) and inv:room_for_item("main", "give"..i) then
+						 meta:set_int("ghost", 1)
+						 inv:add_item("main", inv:get_stack("pay"..i,1))
+						 inv:add_item("main", inv:get_stack("give"..i,1))
+					      end
 					   end
 					end
 					if type==1 and inv:contains_item("main", stack)==false then
@@ -157,7 +159,7 @@ smartshop.update_info=function(pos)
 	local inv = meta:get_inventory()
 	local owner=meta:get_string("owner")
 	local gve=0
-	if meta:get_int("sellall")==1 then gve=1 end
+--	if meta:get_int("sellall")==1 then gve=1 end
 	if meta:get_int("type")==0 then
 		meta:set_string("infotext","(Smartshop by " .. owner ..") Stock is unlimited")
 		return false
@@ -388,7 +390,7 @@ on_construct = function(pos)
 		meta:get_inventory():set_size("pay3", 1)
 		meta:get_inventory():set_size("give4", 1)
 		meta:get_inventory():set_size("pay4", 1)
-		meta:set_int("ghost", 1)
+		meta:set_int("ghost", 0)
 	end,
 on_rightclick = function(pos, node, player, itemstack, pointed_thing)
 		smartshop.showform(pos,player)
