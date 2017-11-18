@@ -96,9 +96,17 @@ smartshop.receive_fields=function(player,pressed)
 				local pay=inv:get_stack("pay" .. n,1):get_name() .." ".. inv:get_stack("pay" .. n,1):get_count()
 				if name~="" then
 					if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owners stock is full, cant receive, exchange aborted.") return end
-					if type==1 and sellall==1 and inv:contains_item("main", stack)==false and inv:contains_item("give" .. n, stack)==true then
-						inv:add_item("main", stack)
-						inv:remove_item("give" .. n, stack)
+					-- if type==1 and sellall==1 and inv:contains_item("main", stack)==false and inv:contains_item("give" .. n, stack)==true then
+					-- 	inv:add_item("main", stack)
+					-- 	inv:remove_item("give" .. n, stack)
+					-- end
+					if meta:get_int("ghost") ~=1 then
+					   -- transition shops to ghost inventory.
+					   if inv:room_for_item("main", pay) and inv:room_for_item("main", stack) then
+					      meta:set_int("ghost", 1)
+					      inv:add_item("main", pay)
+					      inv:add_item("main", stack)
+					   end
 					end
 					if type==1 and inv:contains_item("main", stack)==false then
 					   minetest.chat_send_player(pname, "Error: The owners stock is end.")
@@ -115,6 +123,10 @@ smartshop.receive_fields=function(player,pressed)
 					if type==1 then 
 						inv:remove_item("main", stack)
 						inv:add_item("main", pay)
+						if not inv:contains_item("main", stack) and not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
+						   meta:set_int("alerted",1) -- Do not alert twice
+						   smartshop.send_mail(meta:get_string("owner"), pos, stack)
+						end
 					end
 				end
 			end
@@ -376,28 +388,55 @@ on_construct = function(pos)
 		meta:get_inventory():set_size("pay3", 1)
 		meta:get_inventory():set_size("give4", 1)
 		meta:get_inventory():set_size("pay4", 1)
+		meta:set_int("ghost", 1)
 	end,
 on_rightclick = function(pos, node, player, itemstack, pointed_thing)
 		smartshop.showform(pos,player)
 	end,
 allow_metadata_inventory_put = function(pos, listname, index, stack, player)
-		if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
-		return stack:get_count()
-		end
-		return 0
-	end,
+   if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
+      local meta = minetest.get_meta(pos)
+      if meta:get_int("ghost") and (string.find(listname, "pay") or string.find(listname, "give")) then
+	 local inv = minetest.get_inventory({type="node", pos=pos})
+	 inv:set_stack(listname, index, stack)
+	 return 0
+      end 
+      return stack:get_count()
+   end
+   return 0
+end,
 allow_metadata_inventory_take = function(pos, listname, index, stack, player)
-		if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
-		return stack:get_count()
-		end
-		return 0
-	end,
+   if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
+      local meta = minetest.get_meta(pos)
+      if meta:get_int("ghost") == 1 and (string.find(listname, "pay") or string.find(listname, "give")) then
+	 local inv = minetest.get_inventory({type="node", pos=pos})
+	 inv:set_stack(listname, index, ItemStack(""))
+	 return 0
+      end       
+      return stack:get_count()
+   end
+   return 0
+end,
 allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
-		if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
-		return count
-		end
-		return 0
-	end,
+   if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
+      local meta = minetest.get_meta(pos)
+      local inv = minetest.get_inventory({type="node", pos=pos})
+      if meta:get_int("ghost") ~= 1 then
+	 return count
+      end
+      if (string.find(from_list, "pay") or string.find(from_list, "give")) and to_list == "main" then
+	 inv:set_stack(from_list, from_index, ItemStack(""))
+	 return 0	 
+      elseif (string.find(to_list, "pay") or string.find(to_list, "give")) and from_list == "main" then
+	 inv:set_stack(to_list, to_index, inv:get_stack(from_list, from_index))
+	 inv:set_stack(from_list, from_index, inv:get_stack(from_list, from_index))
+	 return 0
+      else
+	 return count
+      end
+   end
+   return 0
+end,
 can_dig = function(pos, player)
 		local meta=minetest.get_meta(pos)
 		local inv=meta:get_inventory()
