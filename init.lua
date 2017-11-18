@@ -123,7 +123,7 @@ smartshop.receive_fields=function(player,pressed)
 					if type==1 then 
 						inv:remove_item("main", stack)
 						inv:add_item("main", pay)
-						if not inv:contains_item("main", stack) and not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
+						if not inv:contains_item("main", stack)  and (not meta:get_int("alerted") or meta:get_int("alerted") == 0) then
 						   meta:set_int("alerted",1) -- Do not alert twice
 						   smartshop.send_mail(meta:get_string("owner"), pos, stack)
 						end
