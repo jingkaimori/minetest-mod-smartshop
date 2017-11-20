@@ -55,17 +55,6 @@ end
 smartshop.receive_fields=function(player,pressed)
 		if pressed.customer then
 			return smartshop.showform(smartshop.user[player:get_player_name()],player,true)
-		elseif pressed.sellall then
-			local pos=smartshop.user[player:get_player_name()]
-			local meta=minetest.get_meta(pos)
-			local pname=player:get_player_name()
-			if meta:get_int("sellall")==0 then
-				meta:set_int("sellall",1)
-				minetest.chat_send_player(pname, "Sell your stock and give line")
-			else
-				meta:set_int("sellall",0)
-				minetest.chat_send_player(pname, "Sell your stock only")
-			end
 		elseif pressed.tooglelime then
 			local pos=smartshop.user[player:get_player_name()]
 			local meta=minetest.get_meta(pos)
@@ -86,7 +75,6 @@ smartshop.receive_fields=function(player,pressed)
 			local pos=smartshop.user[player:get_player_name()]
 			local meta=minetest.get_meta(pos)
 			local type=meta:get_int("type")
-			local sellall=meta:get_int("sellall")
 			local inv=meta:get_inventory()
 			local pinv=player:get_inventory()
 			local pname=player:get_player_name()
@@ -96,10 +84,6 @@ smartshop.receive_fields=function(player,pressed)
 				local pay=inv:get_stack("pay" .. n,1):get_name() .." ".. inv:get_stack("pay" .. n,1):get_count()
 				if name~="" then
 					if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owners stock is full, cant receive, exchange aborted.") return end
-					-- if type==1 and sellall==1 and inv:contains_item("main", stack)==false and inv:contains_item("give" .. n, stack)==true then
-					-- 	inv:add_item("main", stack)
-					-- 	inv:remove_item("give" .. n, stack)
-					-- end
 					if meta:get_int("ghost") ~=1 then
 					   -- transition shops to ghost inventory.
 					   for i=1,4 do
@@ -158,8 +142,6 @@ smartshop.update_info=function(pos)
 	local meta=minetest.get_meta(pos)
 	local inv = meta:get_inventory()
 	local owner=meta:get_string("owner")
-	local gve=0
---	if meta:get_int("sellall")==1 then gve=1 end
 	if meta:get_int("type")==0 then
 		meta:set_string("infotext","(Smartshop by " .. owner ..") Stock is unlimited")
 		return false
@@ -170,7 +152,7 @@ smartshop.update_info=function(pos)
 	for i=1,4,1 do
 		stuff["count" ..i]=inv:get_stack("give" .. i,1):get_count()
 		stuff["name" ..i]=inv:get_stack("give" .. i,1):get_name()
-		stuff["stock" ..i]=gve*stuff["count" ..i]
+		stuff["stock" ..i]=stuff["count" ..i]
 		stuff["buy" ..i]=0
 		for ii=1,32,1 do
 			name=inv:get_stack("main",ii):get_name()
@@ -295,7 +277,6 @@ smartshop.showform=function(pos,player,re)
 		gui=""
 		.."size[8,10]"
 		.."button_exit[6,0;1.5,1;customer;Customer]"
-		.."button[7.2,0;1,1;sellall;All]"
 		.."label[0,0.2;Item:]"
 		.."label[0,1.2;Price:]"
 		.."list[nodemeta:" .. spos .. ";give1;2,0;1,1;]"
@@ -371,11 +352,9 @@ after_place_node = function(pos, placer)
 		meta:set_string("owner",placer:get_player_name())
 		meta:set_string("infotext", "Shop by: " .. placer:get_player_name())
 		meta:set_int("type",1)
-		meta:set_int("sellall",1)
 		if minetest.check_player_privs(placer:get_player_name(), {creative=true}) or minetest.check_player_privs(placer:get_player_name(), {give=true}) then
 			meta:set_int("creative",1)
 			meta:set_int("type",0)
-			meta:set_int("sellall",0)
 		end
 	end,
 on_construct = function(pos)
@@ -398,9 +377,14 @@ on_rightclick = function(pos, node, player, itemstack, pointed_thing)
 allow_metadata_inventory_put = function(pos, listname, index, stack, player)
    if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
       local meta = minetest.get_meta(pos)
-      if meta:get_int("ghost") and (string.find(listname, "pay") or string.find(listname, "give")) then
+      if meta:get_int("ghost") == 1 and (string.find(listname, "pay") or string.find(listname, "give")) then
 	 local inv = minetest.get_inventory({type="node", pos=pos})
-	 inv:set_stack(listname, index, stack)
+--	 minetest.chat_send_all( inv:get_stack(listname, index):get_name()..stack:get_name())
+	 if inv:get_stack(listname, index):get_name() == stack:get_name() then
+	    inv:add_item(listname, stack)
+	 else
+	    inv:set_stack(listname, index, stack)
+	 end
 	 return 0
       end 
       return stack:get_count()
@@ -430,8 +414,12 @@ allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to
 	 inv:set_stack(from_list, from_index, ItemStack(""))
 	 return 0	 
       elseif (string.find(to_list, "pay") or string.find(to_list, "give")) and from_list == "main" then
-	 inv:set_stack(to_list, to_index, inv:get_stack(from_list, from_index))
-	 inv:set_stack(from_list, from_index, inv:get_stack(from_list, from_index))
+	 if inv:get_stack(to_list, to_index):get_name() == inv:get_stack(from_list, from_index):get_name() then
+	    inv:add_item(to_list, inv:get_stack(from_list, from_index))
+	 else
+	    inv:set_stack(to_list, to_index, inv:get_stack(from_list, from_index))
+	    inv:set_stack(from_list, from_index, inv:get_stack(from_list, from_index))	    
+	 end
 	 return 0
       else
 	 return count
