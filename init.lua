@@ -13,6 +13,13 @@ minetest.register_craft({
 		{"default:sign_wall_wood", "default:torch", "default:sign_wall_wood"},
 	}
 })
+smartshop.get_human_name = function(item)
+   if core.registered_items[item] then
+      return core.registered_items[item].description
+   else
+      return "Unknown Item"
+   end
+end
 
 smartshop.use_offer=function(pos,player,n)
 	local pressed={}
@@ -46,9 +53,8 @@ smartshop.send_mail=function(owner, pos, item)
    if not minetest.get_modpath( "mail" ) then
       return
    end
-   item = ItemStack(item)
    local spos = "("..pos.x..", "..pos.y..", "..pos.z..")"
-   mail.send("DO NOT REPLY", owner, "Out of stock at "..spos, "Your smartshop at "..spos.." is out of "..core.registered_items[item:get_name()].description..". Please restock")
+   mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock")
 end
 
 
@@ -83,7 +89,7 @@ smartshop.receive_fields=function(player,pressed)
 				local stack=name .." ".. inv:get_stack("give" .. n,1):get_count()
 				local pay=inv:get_stack("pay" .. n,1):get_name() .." ".. inv:get_stack("pay" .. n,1):get_count()
 				if name~="" then
-					if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owners stock is full, cant receive, exchange aborted.") return end
+					if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owner's stock is full, can't receive, exchange aborted.") return end
 					if meta:get_int("ghost") ~=1 then
 					   -- transition shops to ghost inventory.
 					   for i=1,4 do
@@ -95,14 +101,14 @@ smartshop.receive_fields=function(player,pressed)
 					   end
 					end
 					if type==1 and inv:contains_item("main", stack)==false then
-					   minetest.chat_send_player(pname, "Error: The owners stock is end.")
+					   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
 					   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
 					      meta:set_int("alerted",1) -- Do not alert twice
-					      smartshop.send_mail(meta:get_string("owner"), pos, stack)
+					      smartshop.send_mail(meta:get_string("owner"), pos, name)
 					   end
 					   return
 					end
-					if not pinv:contains_item("main", pay) then minetest.chat_send_player(pname, "Error: You dont have enough in your inventory to buy this, exchange aborted.") return end
+					if not pinv:contains_item("main", pay) then minetest.chat_send_player(pname, "Error: You don't have enough in your inventory to buy this, exchange aborted.") return end
 					if not pinv:room_for_item("main", stack) then minetest.chat_send_player(pname, "Error: Your inventory is full, exchange aborted.") return end
 					pinv:remove_item("main", pay)
 					pinv:add_item("main", stack)
@@ -111,7 +117,7 @@ smartshop.receive_fields=function(player,pressed)
 						inv:add_item("main", pay)
 						if not inv:contains_item("main", stack)  and (not meta:get_int("alerted") or meta:get_int("alerted") == 0) then
 						   meta:set_int("alerted",1) -- Do not alert twice
-						   smartshop.send_mail(meta:get_string("owner"), pos, stack)
+						   smartshop.send_mail(meta:get_string("owner"), pos, name)
 						end
 					end
 				end
@@ -152,7 +158,7 @@ smartshop.update_info=function(pos)
 	for i=1,4,1 do
 		stuff["count" ..i]=inv:get_stack("give" .. i,1):get_count()
 		stuff["name" ..i]=inv:get_stack("give" .. i,1):get_name()
-		stuff["stock" ..i]=stuff["count" ..i]
+		stuff["stock" ..i]=0 -- stuff["count" ..i]
 		stuff["buy" ..i]=0
 		for ii=1,32,1 do
 			name=inv:get_stack("main",ii):get_name()
@@ -169,14 +175,8 @@ smartshop.update_info=function(pos)
 			stuff["buy" ..i]=""
 			stuff["name" ..i]=""
 		else
-			--if string.find(stuff["name" ..i],":")~=nil then
-			--	stuff["name" ..i]=stuff["name" ..i].split(stuff["name" ..i],":")[2]
-		   --end
-		   if core.registered_items[stuff["name"..i]] then
-		      stuff["name"..i] = core.registered_items[stuff["name"..i]].description
-		   else
-		      stuff["name"..i] = "Unknown Object"
-		   end
+
+		   stuff["name"..i] = smartshop.get_human_name(stuff["name"..i])
 		   stuff["buy" ..i]="(" ..stuff["buy" ..i] ..") "
 		   stuff["name" ..i]=stuff["name" ..i] .."\n"
 		end
