@@ -145,6 +145,9 @@ end)
 
 
 smartshop.update_info=function(pos)
+        if not pos then
+	   return
+        end
 	local meta=minetest.get_meta(pos)
 	local inv = meta:get_inventory()
 	local owner=meta:get_string("owner")
