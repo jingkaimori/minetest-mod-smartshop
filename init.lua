@@ -79,6 +79,9 @@ smartshop.receive_fields=function(player,pressed)
 				if pressed["buy" .. i] then break end
 			end
 			local pos=smartshop.user[player:get_player_name()]
+			if not pos then
+			   return
+			end
 			local meta=minetest.get_meta(pos)
 			local type=meta:get_int("type")
 			local inv=meta:get_inventory()
