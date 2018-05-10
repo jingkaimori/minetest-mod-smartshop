@@ -5,6 +5,56 @@ smartshop={user={},tmp={},dir={{x=0,y=0,z=-1},{x=-1,y=0,z=0},{x=0,y=0,z=1},{x=1,
 {{x=0,y=0.2,z=-0.2},{x=0,y=0.2,z=0.2},{x=0,y=-0.2,z=-0.2},{x=0,y=-0.2,z=0.2}}}
 }
 
+-- table with itemname: number of items being traded
+smartshop.itemstats = {}
+smartshop.itemprices = {}
+
+
+
+smartshop.itemsatpos = function(pos, item, count)
+   -- set number of items of type 'item' sold at position 'pos'
+   if smartshop.itemstats[item] == nil then
+      smartshop.itemstats[item] = {}
+   end
+   smartshop.itemstats[item][pos] = count
+   local file = io.open(minetest.get_worldpath().."/smartshop_itemcounts.txt", "w")
+   if file then
+      file:write(minetest.serialize(smartshop.itemstats))
+      file:close()
+   end
+end
+
+smartshop.itempriceatpos = function(pos, item, price)
+   -- set number of items of type 'item' sold at position 'pos'
+   if smartshop.itemprices[item] == nil then
+      smartshop.itemprices[item] = {}
+   end
+   local file = io.open(minetest.get_worldpath().."/smartshop_itemprices.txt", "w")
+   if file then
+      file:write(minetest.serialize(smartshop.itemprices))
+      file:close()
+   end
+   smartshop.itemprices[item][pos] = price
+end
+
+smartshop.minegeldtonumber = function(stack)
+   -- return number of minegeld in stack, returns nil if stack is not composed of minegeld
+   count = stack:get_count()
+   if count == 0 then
+      return 0
+   end
+   if stack:get_name() == "currency:minegeld" then
+      return count
+   elseif stack:get_name() == "currency:minegeld_5" then
+      return count * 5
+   elseif stack:get_name() == "currency:minegeld_10" then
+      return count * 10
+   else
+      return nil
+   end
+end
+
+
 minetest.register_craft({
 	output = "smartshop:shop",
 	recipe = {
@@ -28,8 +78,6 @@ smartshop.use_offer=function(pos,player,n)
 	smartshop.receive_fields(player,pressed)
 	smartshop.user[player:get_player_name()]=nil
 	smartshop.update(pos)
-
-
 end
 
 smartshop.get_offer=function(pos)
@@ -152,6 +200,7 @@ smartshop.update_info=function(pos)
 	   return
         end
 	local meta=minetest.get_meta(pos)
+	local spos=minetest.pos_to_string(pos)
 	local inv = meta:get_inventory()
 	local owner=meta:get_string("owner")
 	if meta:get_int("type")==0 then
@@ -165,6 +214,7 @@ smartshop.update_info=function(pos)
 		stuff["count" ..i]=inv:get_stack("give" .. i,1):get_count()
 		stuff["name" ..i]=inv:get_stack("give" .. i,1):get_name()
 		stuff["stock" ..i]=0 -- stuff["count" ..i]
+		stuff["pay"..i] = smartshop.minegeldtonumber(inv:get_stack("pay" .. i,1))/stuff["count" ..i]
 		stuff["buy" ..i]=0
 		for ii=1,32,1 do
 			name=inv:get_stack("main",ii):get_name()
@@ -176,12 +226,16 @@ smartshop.update_info=function(pos)
 		local nstr=(stuff["stock" ..i]/stuff["count" ..i]) ..""
 		nstr=nstr.split(nstr, ".")
 		stuff["buy" ..i]=tonumber(nstr[1])
-
+		if stuff["name" ..i]~="" and stuff["buy" ..i]==0 then
+		   smartshop.itemsatpos(spos, stuff["name"..i], stuff["buy"..i]*stuff["count" ..i])
+		   smartshop.itempriceatpos(spos, stuff["name"..i], nil)
+		end
 		if stuff["name" ..i]=="" or stuff["buy" ..i]==0 then
 			stuff["buy" ..i]=""
 			stuff["name" ..i]=""
 		else
-
+		   smartshop.itemsatpos(spos, stuff["name"..i], stuff["buy"..i]*stuff["count" ..i])
+		   smartshop.itempriceatpos(spos, stuff["name"..i], stuff["pay"..i])
 		   stuff["name"..i] = smartshop.get_human_name(stuff["name"..i])
 		   stuff["buy" ..i]="(" ..stuff["buy" ..i] ..") "
 		   stuff["name" ..i]=stuff["name" ..i] .."\n"
@@ -336,6 +390,7 @@ minetest.register_node("smartshop:shop", {
 			local meta = minetest.get_meta(pos)
 			local inv = meta:get_inventory()
 			local added = inv:add_item("main", stack)
+			smartshop.update_info(pos)
 			return added
 		end,
 		can_insert = function(pos, node, stack, direction)
@@ -442,3 +497,47 @@ can_dig = function(pos, player)
 		end
 	end,
 })
+
+minetest.register_chatcommand("smstats", {
+	description = "Get number of items sold",
+	params = "<item_name>",
+	func = function(plname, params)
+		local name = params:match("(%S+)")
+		if not (name) then
+			return false, "Usage: /smstats <itemname>"
+		end
+		if not smartshop.itemstats[name] then
+		   return false, "No stats on "..name
+		end
+		sum = 0
+		for i, k in pairs(smartshop.itemstats[name]) do
+		   sum = sum + k
+		end
+		minetest.chat_send_player(plname, "Number of items: "..sum)
+		psum = 0
+		for i, k in pairs(smartshop.itemprices[name]) do
+		   psum = psum + k*smartshop.itemstats[name][i]
+		end
+		minetest.chat_send_player(plname, "Average price: "..psum/sum)
+		return true
+--		local ok, e = xban.ban_player(plname, name, nil, reason)
+--		return ok, ok and ("Banned %s."):format(plname) or e
+	end,
+})
+
+
+-- load itemstats
+local file = io.open(minetest.get_worldpath().."/smartshop_itemcounts.txt", "r")
+if file then
+   local table = minetest.deserialize(file:read("*all"))
+   if type(table) == "table" then
+      smartshop.itemstats = table
+   end
+end
+local file = io.open(minetest.get_worldpath().."/smartshop_itemprices.txt", "r")
+if file then
+   local table = minetest.deserialize(file:read("*all"))
+   if type(table) == "table" then
+      smartshop.itemprices = table
+   end
+end
