@@ -536,7 +536,7 @@ minetest.register_chatcommand("smstats", {
 
 minetest.register_lbm({
       name = "smartshop:update",
-      nodenames = {"smartshop:shop"}
+      nodenames = {"smartshop:shop"},
       action = function(pos, node)
 	 smartshop.update_info(pos)	   
       end,
