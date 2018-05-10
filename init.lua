@@ -504,6 +504,33 @@ can_dig = function(pos, player)
 	end,
 })
 
+smartshop.get_item_count = function(name)
+   sum = 0
+   if smartshop.itemstats[name] == nil then
+      return 0
+   end
+   for i, k in pairs(smartshop.itemstats[name]) do
+      sum = sum + k
+   end
+   return sum
+end
+
+smartshop.get_item_price = function(name)
+   sum = smartshop.get_item_count(name)
+   if smartshop.itemprices[name] == nil then
+      return 0
+   end
+   if sum == 0 then
+      return 0
+   end
+   psum = 0
+   for i, k in pairs(smartshop.itemprices[name]) do
+      psum = psum + k*smartshop.itemstats[name][i]
+   end
+   return psum/sum
+end
+
+
 minetest.register_chatcommand("smstats", {
 	description = "Get number of items sold",
 	params = "<item_name>",
@@ -515,24 +542,35 @@ minetest.register_chatcommand("smstats", {
 		if not smartshop.itemstats[name] then
 		   return false, "No stats on "..name
 		end
-		sum = 0
-		for i, k in pairs(smartshop.itemstats[name]) do
-		   sum = sum + k
-		end
+		sum = smartshop.get_item_count(name)
 		minetest.chat_send_player(plname, "Number of items: "..sum)
 		if sum == 0 then
 		   return
 		end
-		psum = 0
-		for i, k in pairs(smartshop.itemprices[name]) do
-		   psum = psum + k*smartshop.itemstats[name][i]
-		end
-		minetest.chat_send_player(plname, "Average price: "..string.format("%.3f",psum/sum))
+		price = smartshop.get_item_price(name)
+		minetest.chat_send_player(plname, "Average price: "..string.format("%.3f",price))
 		return true
 --		local ok, e = xban.ban_player(plname, name, nil, reason)
 --		return ok, ok and ("Banned %s."):format(plname) or e
 	end,
 })
+
+minetest.register_chatcommand("smreport", {			      
+	description = "Get number of items sold",
+	func = function(plname, params)
+	   local file = io.open(minetest.get_worldpath().."/smartshop_report.txt", "w")
+	   if not file then
+	      return false, "could not write to file"
+	   end
+	   for i,k in pairs(smartshop.itemstats) do
+	      local count = smartshop.get_item_count(i)
+	      local price = smartshop.get_item_price(i)
+	      file:write(i.." "..count.." "..string.format("%.3f", price).."\n")
+	   end
+	   file:close()
+	end,
+})
+				    
 
 minetest.register_lbm({
       name = "smartshop:update",
