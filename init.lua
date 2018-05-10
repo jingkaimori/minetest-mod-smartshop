@@ -515,6 +515,17 @@ smartshop.get_item_count = function(name)
    return sum
 end
 
+smartshop.get_shop_count = function(name)
+   sum = 0
+   if smartshop.itemstats[name] == nil then
+      return 0
+   end
+   for i, k in pairs(smartshop.itemstats[name]) do
+      sum = sum + 1
+   end
+   return sum
+end
+
 smartshop.get_item_price = function(name)
    sum = smartshop.get_item_count(name)
    if smartshop.itemprices[name] == nil then
@@ -544,6 +555,7 @@ minetest.register_chatcommand("smstats", {
 		end
 		sum = smartshop.get_item_count(name)
 		minetest.chat_send_player(plname, "Number of items: "..sum)
+		minetest.chat_send_player(plname, "Number of shops offering item: "..smartshop.get_shop_count(name))
 		if sum == 0 then
 		   return
 		end
@@ -565,7 +577,7 @@ minetest.register_chatcommand("smreport", {
 	   for i,k in pairs(smartshop.itemstats) do
 	      local count = smartshop.get_item_count(i)
 	      local price = smartshop.get_item_price(i)
-	      file:write(i.." "..count.." "..string.format("%.3f", price).."\n")
+	      file:write(i.." "..count.." "..string.format("%.3f", price).." "..smartshop.get_shop_count(i).."\n")
 	   end
 	   file:close()
 	end,
