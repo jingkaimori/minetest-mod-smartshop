@@ -534,6 +534,14 @@ minetest.register_chatcommand("smstats", {
 	end,
 })
 
+minetest.register_lbm({
+      name = "smartshop:update",
+      nodenames = {"smartshop:shop"}
+      action = function(pos, node)
+	 smartshop.update_info(pos)	   
+      end,
+})
+
 
 -- load itemstats
 local file = io.open(minetest.get_worldpath().."/smartshop_itemcounts.txt", "r")
