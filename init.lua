@@ -8,6 +8,7 @@ smartshop={user={},tmp={},dir={{x=0,y=0,z=-1},{x=-1,y=0,z=0},{x=0,y=0,z=1},{x=1,
 -- table with itemname: number of items being traded
 smartshop.itemstats = {}
 smartshop.itemprices = {}
+smartshop.stuffsold = {}
 
 
 
@@ -214,7 +215,10 @@ smartshop.update_info=function(pos)
 		stuff["count" ..i]=inv:get_stack("give" .. i,1):get_count()
 		stuff["name" ..i]=inv:get_stack("give" .. i,1):get_name()
 		stuff["stock" ..i]=0 -- stuff["count" ..i]
-		stuff["pay"..i] = smartshop.minegeldtonumber(inv:get_stack("pay" .. i,1))/stuff["count" ..i]
+		local mg_price = smartshop.minegeldtonumber(inv:get_stack("pay" .. i,1))
+		if mg_price ~= nil then
+		   stuff["pay"..i] = mg_price/stuff["count" ..i]
+		end
 		stuff["buy" ..i]=0
 		for ii=1,32,1 do
 			name=inv:get_stack("main",ii):get_name()
@@ -226,16 +230,18 @@ smartshop.update_info=function(pos)
 		local nstr=(stuff["stock" ..i]/stuff["count" ..i]) ..""
 		nstr=nstr.split(nstr, ".")
 		stuff["buy" ..i]=tonumber(nstr[1])
-		if stuff["name" ..i]~="" and stuff["buy" ..i]==0 then
-		   smartshop.itemsatpos(spos, stuff["name"..i], stuff["buy"..i]*stuff["count" ..i])
-		   smartshop.itempriceatpos(spos, stuff["name"..i], nil)
-		end
 		if stuff["name" ..i]=="" or stuff["buy" ..i]==0 then
 			stuff["buy" ..i]=""
 			stuff["name" ..i]=""
+			if smartshop.stuffsold[spos..i] then
+			   smartshop.itemsatpos(spos, smartshop.stuffsold[spos..i], 0)
+			   smartshop.itempriceatpos(spos, smartshop.stuffsold[spos..i], nil)
+			   smartshop.stuffsold[spos..i] = nil
+			end						   
 		else
 		   smartshop.itemsatpos(spos, stuff["name"..i], stuff["buy"..i]*stuff["count" ..i])
 		   smartshop.itempriceatpos(spos, stuff["name"..i], stuff["pay"..i])
+		   smartshop.stuffsold[spos..i] = stuff["name"..i]
 		   stuff["name"..i] = smartshop.get_human_name(stuff["name"..i])
 		   stuff["buy" ..i]="(" ..stuff["buy" ..i] ..") "
 		   stuff["name" ..i]=stuff["name" ..i] .."\n"
@@ -514,11 +520,14 @@ minetest.register_chatcommand("smstats", {
 		   sum = sum + k
 		end
 		minetest.chat_send_player(plname, "Number of items: "..sum)
+		if sum == 0 then
+		   return
+		end
 		psum = 0
 		for i, k in pairs(smartshop.itemprices[name]) do
 		   psum = psum + k*smartshop.itemstats[name][i]
 		end
-		minetest.chat_send_player(plname, "Average price: "..psum/sum)
+		minetest.chat_send_player(plname, "Average price: "..string.format("%.3f",psum/sum))
 		return true
 --		local ok, e = xban.ban_player(plname, name, nil, reason)
 --		return ok, ok and ("Banned %s."):format(plname) or e
