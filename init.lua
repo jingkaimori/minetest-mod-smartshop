@@ -567,31 +567,45 @@ minetest.register_chatcommand("smstats", {
 	end,
 })
 
+smartshop.report = function ()
+   local file = io.open(minetest.get_worldpath().."/smartshop_report.txt", "w")
+   if not file then
+      return false, "could not write to file"
+   end
+   for i,k in pairs(smartshop.itemstats) do
+      local count = smartshop.get_item_count(i)
+      local price = smartshop.get_item_price(i)
+      file:write(i.." "..count.." "..string.format("%.3f", price).." "..smartshop.get_shop_count(i).."\n")
+   end
+   file:close()
+end
+
 minetest.register_chatcommand("smreport", {			      
 	description = "Get number of items sold",
 	func = function(plname, params)
-	   local file = io.open(minetest.get_worldpath().."/smartshop_report.txt", "w")
-	   if not file then
-	      return false, "could not write to file"
-	   end
-	   for i,k in pairs(smartshop.itemstats) do
-	      local count = smartshop.get_item_count(i)
-	      local price = smartshop.get_item_price(i)
-	      file:write(i.." "..count.." "..string.format("%.3f", price).." "..smartshop.get_shop_count(i).."\n")
-	   end
-	   file:close()
+	   smartshop.report()
 	end,
 })
-				    
 
-minetest.register_lbm({
-      name = "smartshop:update",
-      nodenames = {"smartshop:shop"},
-      action = function(pos, node)
-	 smartshop.update_info(pos)	   
-      end,
-})
+local timer = 0
+minetest.register_globalstep(function(dtime)
+	timer = timer + dtime;
+	if timer >= 100 then
+	   smartshop.report()
+	   timer = 0
+	end
+end)
 
+
+if false then -- This lbm is used to add pre-update smartshops to the price database. Activate with care! Warning: very slow.
+   minetest.register_lbm({
+	 name = "smartshop:update",
+	 nodenames = {"smartshop:shop"},
+	 action = function(pos, node)
+	    smartshop.update_info(pos)	   
+	 end,
+   })
+end
 
 -- load itemstats
 local file = io.open(minetest.get_worldpath().."/smartshop_itemcounts.txt", "r")
