@@ -108,12 +108,15 @@ end
 
 
 smartshop.receive_fields=function(player,pressed)
+	local pname = player:get_player_name()
+	local pos = smartshop.user[pname]
+	if not pos then
+		return
+	end
 		if pressed.customer then
-			return smartshop.showform(smartshop.user[player:get_player_name()],player,true)
+			return smartshop.showform(pos, player, true)
 		elseif pressed.tooglelime then
-			local pos=smartshop.user[player:get_player_name()]
 			local meta=minetest.get_meta(pos)
-			local pname=player:get_player_name()
 			if meta:get_int("type")==0 then
 				meta:set_int("type",1)
 				minetest.chat_send_player(pname, "Your stock is limited")
@@ -127,15 +130,10 @@ smartshop.receive_fields=function(player,pressed)
 				n=i
 				if pressed["buy" .. i] then break end
 			end
-			local pos=smartshop.user[player:get_player_name()]
-			if not pos then
-			   return
-			end
 			local meta=minetest.get_meta(pos)
 			local type=meta:get_int("type")
 			local inv=meta:get_inventory()
 			local pinv=player:get_inventory()
-			local pname=player:get_player_name()
 			if pressed["buy" .. n] then
 				local name=inv:get_stack("give" .. n,1):get_name()
 				local stack=name .." ".. inv:get_stack("give" .. n,1):get_count()
@@ -175,15 +173,12 @@ smartshop.receive_fields=function(player,pressed)
 				end
 			end
 		else
-			local pos=smartshop.user[player:get_player_name()]
 			smartshop.update_info(pos)
-			if smartshop.user[player:get_player_name()] or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
-				local meta=minetest.get_meta(smartshop.user[player:get_player_name()])
-				if meta:get_string("owner")==player:get_player_name() then
-					smartshop.update(smartshop.user[player:get_player_name()],"update")
-				end
+			local meta = minetest.get_meta(pos)
+			if meta:get_string("owner") == pname then
+				smartshop.update(pos, "update")
 			end
-			smartshop.user[player:get_player_name()]=nil
+			smartshop.user[pname] = nil
 		end
 end
 
