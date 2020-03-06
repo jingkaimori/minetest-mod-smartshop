@@ -144,18 +144,18 @@ smartshop.receive_fields=function(player,pressed)
 			local inv=meta:get_inventory()
 			local pinv=player:get_inventory()
 			if pressed["buy" .. n] then
-				local name=inv:get_stack("give" .. n,1):get_name()
-				local stack=name .." ".. inv:get_stack("give" .. n,1):get_count()
-				local pay=inv:get_stack("pay" .. n,1):get_name() .." ".. inv:get_stack("pay" .. n,1):get_count()
+				local stack=inv:get_stack("give" .. n,1)
+				local name=stack:get_name()
+				local pay=inv:get_stack("pay" .. n,1)
 				if name~="" then
 					if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owner's stock is full, can't receive, exchange aborted.") return end
 					if meta:get_int("ghost") ~=1 then
 					   -- transition shops to ghost inventory.
 					   for i=1,4 do
 					      if inv:room_for_item("main", "pay"..i) and inv:room_for_item("main", "give"..i) then
-						 meta:set_int("ghost", 1)
-						 inv:add_item("main", inv:get_stack("pay"..i,1))
-						 inv:add_item("main", inv:get_stack("give"..i,1))
+								meta:set_int("ghost", 1)
+								inv:add_item("main", inv:get_stack("pay"..i,1))
+								inv:add_item("main", inv:get_stack("give"..i,1))
 					      end
 					   end
 					end
@@ -169,11 +169,14 @@ smartshop.receive_fields=function(player,pressed)
 					end
 					if not pinv:contains_item("main", pay) then minetest.chat_send_player(pname, "Error: You don't have enough in your inventory to buy this, exchange aborted.") return end
 					if not pinv:room_for_item("main", stack) then minetest.chat_send_player(pname, "Error: Your inventory is full, exchange aborted.") return end
-					pinv:remove_item("main", pay)
-					pinv:add_item("main", stack)
-					if type==1 then 
-						inv:remove_item("main", stack)
-						inv:add_item("main", pay)
+					if type == 0 then
+						pinv:remove_item("main", pay)
+						pinv:add_item("main", stack)
+					else
+						local item = inv:remove_item("main", stack)
+						pinv:add_item("main", item)
+						item = pinv:remove_item("main",pay)
+						inv:add_item("main", item)
 						if not inv:contains_item("main", stack)  and (not meta:get_int("alerted") or meta:get_int("alerted") == 0) then
 						   meta:set_int("alerted",1) -- Do not alert twice
 						   smartshop.send_mail(meta:get_string("owner"), pos, name)
