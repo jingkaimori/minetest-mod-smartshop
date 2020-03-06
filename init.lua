@@ -106,6 +106,9 @@ smartshop.send_mail=function(owner, pos, item)
    mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock")
 end
 
+local function is_creative(pname)
+	return minetest.check_player_privs(pname, {creative=true}) or minetest.check_player_privs(pname, {give=true})
+end
 
 smartshop.receive_fields=function(player,pressed)
 	local pname = player:get_player_name()
@@ -117,6 +120,12 @@ smartshop.receive_fields=function(player,pressed)
 			return smartshop.showform(pos, player, true)
 		elseif pressed.tooglelime then
 			local meta=minetest.get_meta(pos)
+			if not is_creative(pname) then
+				meta:set_int("type", 1)
+				meta:set_int("creative", 0)
+				minetest.chat_send_player(pname, "You are not allowed to make a creative shop!")
+				return
+			end
 			if meta:get_int("type")==0 then
 				meta:set_int("type",1)
 				minetest.chat_send_player(pname, "Your stock is limited")
@@ -414,7 +423,7 @@ after_place_node = function(pos, placer)
 		meta:set_string("owner",placer:get_player_name())
 		meta:set_string("infotext", "Shop by: " .. placer:get_player_name())
 		meta:set_int("type",1)
-		if minetest.check_player_privs(placer:get_player_name(), {creative=true}) or minetest.check_player_privs(placer:get_player_name(), {give=true}) then
+		if is_creative(placer:get_player_name()) then
 			meta:set_int("creative",1)
 			meta:set_int("type",0)
 		end
