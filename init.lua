@@ -446,6 +446,7 @@ on_construct = function(pos)
 		meta:set_int("ghost", 1)
 	end,
 on_rightclick = function(pos, node, player, itemstack, pointed_thing)
+	   smartshop.update(pos, "update")
 		smartshop.showform(pos,player)
 	end,
 allow_metadata_inventory_put = function(pos, listname, index, stack, player)
@@ -613,6 +614,7 @@ if false then -- This lbm is used to add pre-update smartshops to the price data
 	 end,
    })
 end
+
 
 -- load itemstats
 local file = io.open(minetest.get_worldpath().."/smartshop_itemcounts.txt", "r")
