@@ -50,6 +50,8 @@ smartshop.minegeldtonumber = function(stack)
       return count * 5
    elseif stack:get_name() == "currency:minegeld_10" then
       return count * 10
+   elseif stack:get_name() == "currency:minegeld_50" then
+      return count * 50
    else
       return nil
    end
@@ -98,12 +100,12 @@ smartshop.get_offer=function(pos)
 	return offer
 end
 
-smartshop.send_mail=function(owner, pos, item)
+smartshop.send_mail=function(owner, pos, item, pname)
    if not minetest.get_modpath( "mail" ) then
       return
    end
    local spos = "("..pos.x..", "..pos.y..", "..pos.z..")"
-   mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock")
+   mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock! Thanks, " .. pname)
 end
 
 local function is_creative(pname)
@@ -163,7 +165,7 @@ smartshop.receive_fields=function(player,pressed)
 					   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
 					   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
 					      meta:set_int("alerted",1) -- Do not alert twice
-					      smartshop.send_mail(meta:get_string("owner"), pos, name)
+					      smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
 					   end
 					   return
 					end
@@ -179,7 +181,7 @@ smartshop.receive_fields=function(player,pressed)
 						inv:add_item("main", item)
 						if not inv:contains_item("main", stack)  and (not meta:get_int("alerted") or meta:get_int("alerted") == 0) then
 						   meta:set_int("alerted",1) -- Do not alert twice
-						   smartshop.send_mail(meta:get_string("owner"), pos, name)
+						   smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
 						end
 					end
 				end
@@ -446,8 +448,8 @@ on_construct = function(pos)
 		meta:set_int("ghost", 1)
 	end,
 on_rightclick = function(pos, node, player, itemstack, pointed_thing)
-	   smartshop.update(pos, "update")
 		smartshop.showform(pos,player)
+		smartshop.update(pos, "update")
 	end,
 allow_metadata_inventory_put = function(pos, listname, index, stack, player)
    if minetest.get_meta(pos):get_string("owner")==player:get_player_name() or minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then
