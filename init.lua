@@ -479,7 +479,6 @@ minetest.register_node("smartshop:shop", {
 								if type(current_offer)=='table' and current_offer.give and current_offer.pay then
 									local give_item = ItemStack(current_offer.give);
 									local pay_item = ItemStack(current_offer.pay);
-									print(give_item:get_name())
 									if minetest.registered_items[give_item:get_name()] and minetest.registered_items[pay_item:get_name()]  then
 										if type(current_offer.give_count) == "number"  then
 											give_item:set_count(math.floor(current_offer.give_count))
@@ -494,14 +493,6 @@ minetest.register_node("smartshop:shop", {
 							end
 						end
 					end
-
-					-- if event.type == 'digiline' then
-					-- 	print(event.channel)
-					-- 	print(event.msg)
-					-- else
-					-- 	digiline.send('b',{type='ask'});
-
-					-- end
 				end
 			}
 	},
