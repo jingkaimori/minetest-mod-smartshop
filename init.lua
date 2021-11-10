@@ -90,12 +90,28 @@ smartshop.get_offer=function(pos)
 	local inv=meta:get_inventory()
 	local offer={}
 	for i=1,4,1 do
+		local pay_stack = inv:get_stack("pay" .. i,1);
+		local give_stock = 0;
 		offer[i]={
-		give=inv:get_stack("give" .. i,1):get_name(),
-		give_count=inv:get_stack("give" .. i,1):get_count(),
-		pay=inv:get_stack("pay" .. i,1):get_name(),
-		pay_count=inv:get_stack("pay" .. i,1):get_count(),
+			give=inv:get_stack("give" .. i,1):get_name(),
+			give_count=inv:get_stack("give" .. i,1):get_count(),
+			pay=pay_stack:get_name(),
+			pay_count=pay_stack:get_count(),
+			stock = 0,		-- times customer can purchase before sold out
+			pay_price = 0,	-- average minegeld price of sold item, nonzero for minegeld-taking selling shop
 		}
+		local mg_price = smartshop.minegeldtonumber(pay_stack)
+		if mg_price ~= nil then
+			offer[i].pay_price = mg_price/offer[i].give_count
+		end
+		for ii=1,32,1 do
+			local name=inv:get_stack("main",ii):get_name()
+			local count=inv:get_stack("main",ii):get_count()
+			if name==offer[i].give then
+				give_stock = give_stock + count
+			end
+		end
+		offer[i].stock = math.floor(give_stock/offer[i].give_count)
 	end
 	return offer
 end
