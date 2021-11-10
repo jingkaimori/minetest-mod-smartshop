@@ -135,6 +135,9 @@ smartshop.receive_fields=function(player,pressed)
 				meta:set_int("type",0)
 				minetest.chat_send_player(pname, "Your stock is unlimited")
 			end
+		elseif pressed.channel then
+			local meta=minetest.get_meta(pos)
+			meta:set_string("channel",pressed.channel)
 		elseif not pressed.quit then
 			local n=1
 			for i=1,4,1 do
@@ -350,10 +353,11 @@ smartshop.showform=function(pos,player,re)
 	if owner then
 	        meta:set_int("alerted",0) -- Player has been there to refill
 		gui=""
-		.."size[8,10]"
+		.."size[8,11]"
 		.."button_exit[6,0;1.5,1;customer;Customer]"
 		.."label[0,0.2;Item:]"
 		.."label[0,1.2;Price:]"
+		.."label[0,2.2;Channel:]"
 		.."list[nodemeta:" .. spos .. ";give1;2,0;1,1;]"
 		.."list[nodemeta:" .. spos .. ";pay1;2,1;1,1;]"
 		.."list[nodemeta:" .. spos .. ";give2;3,0;1,1;]"
@@ -362,13 +366,14 @@ smartshop.showform=function(pos,player,re)
 		.."list[nodemeta:" .. spos .. ";pay3;4,1;1,1;]"
 		.."list[nodemeta:" .. spos .. ";give4;5,0;1,1;]"
 		.."list[nodemeta:" .. spos .. ";pay4;5,1;1,1;]"
+		.."field[2.2,2.2;6,1;channel;;".. meta:get_string("channel") .."]"
 		if creative==1 then
 			gui=gui .."label[0.5,-0.4;Your stock is unlimited becaouse you have creative or give]"
 			.."button[6,1;2.2,1;tooglelime;Toggle limit]"
 		end
 		gui=gui
-		.."list[nodemeta:" .. spos .. ";main;0,2;8,4;]"
-		.."list[current_player;main;0,6.2;8,4;]"
+		.."list[nodemeta:" .. spos .. ";main;0,3;8,4;]"
+		.."list[current_player;main;0,7.2;8,4;]"
 		.."listring[nodemeta:" .. spos .. ";main]"
 		.."listring[current_player;main]"
 	else
@@ -423,9 +428,53 @@ minetest.register_node("smartshop:shop", {
 		end,
 		input_inventory = "main",
 		connect_sides = {left = 1, right = 1, front = 1, back = 1, top = 1, bottom = 1}},
+	digilines = {
+			receptor = {
+				
+			},
+			effector = {
+				-- invoked when this node receives a message from digiline
+				---@param position_of_message table
+				---@param nodedef table
+				---@param channel string
+				---@param message {type:string}
+				action = function(position_of_message, nodedef, channel, message)
+					
+					local meta = minetest.get_meta(position_of_message)
+					local setchan = meta:get_string("channel")
+					if setchan ~= channel then return end
+
+					if type(message) == 'table' and type(message.type) =='string' then
+						if message.type == 'get' then
+							local inventory = meta:get_inventory();
+							local mainlist = inventory:get_list('main')
+							local sendmessage = {
+								offer = smartshop.get_offer(position_of_message),
+								inventory = {},
+							}
+							for index, stack in pairs(mainlist) do
+								sendmessage.inventory[index] = stack:to_table()
+							end
+							minetest.chat_send_all( minetest.pos_to_string(position_of_message))
+							digiline:receptor_send(position_of_message, digiline.rules.default, setchan, sendmessage)
+						elseif message.type == 'set' then
+						end
+					end
+
+					-- if event.type == 'digiline' then
+					-- 	print(event.channel)
+					-- 	print(event.msg)
+					-- else
+					-- 	digiline.send('b',{type='ask'});
+
+					-- end
+				end
+			}
+	},
 after_place_node = function(pos, placer)
 		local meta=minetest.get_meta(pos)
 		meta:set_string("owner",placer:get_player_name())
+		meta:set_string("channel",placer:get_player_name())
 		meta:set_string("infotext", "Shop by: " .. placer:get_player_name())
 		meta:set_int("type",1)
 		if is_creative(placer:get_player_name()) then
