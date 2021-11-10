@@ -453,7 +453,7 @@ minetest.register_node("smartshop:shop", {
 				---@param position_of_message table
 				---@param nodedef table
 				---@param channel string
-				---@param message {type:string}
+				---@param message {type:'get'|'set',offer:{give:string, give_count:number, pay:string, pay_count:number}[]}
 				action = function(position_of_message, nodedef, channel, message)
 					
 					local meta = minetest.get_meta(position_of_message)
@@ -461,8 +461,8 @@ minetest.register_node("smartshop:shop", {
 					if setchan ~= channel then return end
 
 					if type(message) == 'table' and type(message.type) =='string' then
+						local inventory = meta:get_inventory();
 						if message.type == 'get' then
-							local inventory = meta:get_inventory();
 							local mainlist = inventory:get_list('main')
 							local sendmessage = {
 								offer = smartshop.get_offer(position_of_message),
@@ -473,7 +473,25 @@ minetest.register_node("smartshop:shop", {
 							end
 							minetest.chat_send_all( minetest.pos_to_string(position_of_message))
 							digiline:receptor_send(position_of_message, digiline.rules.default, setchan, sendmessage)
-						elseif message.type == 'set' then
+						elseif message.type == 'set' and message.offer then
+							for i = 1, 4, 1 do
+								local current_offer = message.offer[i]
+								if type(current_offer)=='table' and current_offer.give and current_offer.pay then
+									local give_item = ItemStack(current_offer.give);
+									local pay_item = ItemStack(current_offer.pay);
+									print(give_item:get_name())
+									if minetest.registered_items[give_item:get_name()] and minetest.registered_items[pay_item:get_name()]  then
+										if type(current_offer.give_count) == "number"  then
+											give_item:set_count(math.floor(current_offer.give_count))
+										end
+										inventory:set_stack('give'..i, 1, give_item)
+										if type(current_offer.pay_count) == "number"  then
+											pay_item:set_count(math.floor(current_offer.pay_count))
+										end
+										inventory:set_stack('pay'..i, 1, pay_item)
+									end
+								end
+							end
 						end
 					end
 
