@@ -230,35 +230,15 @@ smartshop.update_info=function(pos)
         end
 	local meta=minetest.get_meta(pos)
 	local spos=minetest.pos_to_string(pos)
-	local inv = meta:get_inventory()
 	local owner=meta:get_string("owner")
 	if meta:get_int("type")==0 then
 		meta:set_string("infotext","(Smartshop by " .. owner ..") Stock is unlimited")
 		return false
 	end
-	local name=""
-	local count=0
 	local stuff={}
+	local offer = smartshop.get_offer(pos)
 	for i=1,4,1 do
-		stuff["count" ..i]=inv:get_stack("give" .. i,1):get_count()
-		stuff["name" ..i]=inv:get_stack("give" .. i,1):get_name()
-		stuff["stock" ..i]=0 -- stuff["count" ..i]
-		local mg_price = smartshop.minegeldtonumber(inv:get_stack("pay" .. i,1))
-		if mg_price ~= nil then
-		   stuff["pay"..i] = mg_price/stuff["count" ..i]
-		end
-		stuff["buy" ..i]=0
-		for ii=1,32,1 do
-			name=inv:get_stack("main",ii):get_name()
-			count=inv:get_stack("main",ii):get_count()
-			if name==stuff["name" ..i] then
-				stuff["stock" ..i]=stuff["stock" ..i]+count
-			end
-		end
-		local nstr=(stuff["stock" ..i]/stuff["count" ..i]) ..""
-		nstr=nstr.split(nstr, ".")
-		stuff["buy" ..i]=tonumber(nstr[1])
-		if stuff["name" ..i]=="" or stuff["buy" ..i]==0 then
+		if offer[i].give=="" or offer[i].stock==0 then
 			stuff["buy" ..i]=""
 			stuff["name" ..i]=""
 			if smartshop.stuffsold[spos..i] then
@@ -267,12 +247,11 @@ smartshop.update_info=function(pos)
 			   smartshop.stuffsold[spos..i] = nil
 			end						   
 		else
-		   smartshop.itemsatpos(spos, stuff["name"..i], stuff["buy"..i]*stuff["count" ..i])
-		   smartshop.itempriceatpos(spos, stuff["name"..i], stuff["pay"..i])
-		   smartshop.stuffsold[spos..i] = stuff["name"..i]
-		   stuff["name"..i] = smartshop.get_human_name(stuff["name"..i])
-		   stuff["buy" ..i]="(" ..stuff["buy" ..i] ..") "
-		   stuff["name" ..i]=stuff["name" ..i] .."\n"
+		   smartshop.itemsatpos(spos, offer[i].give, offer[i].stock * offer[i].give_count)
+		   smartshop.itempriceatpos(spos, offer[i].give, offer[i].pay_pricer)
+		   smartshop.stuffsold[spos..i] = offer[i].give
+		   stuff["buy" ..i]="(" ..offer[i].stock ..") "
+		   stuff["name" ..i]=smartshop.get_human_name(offer[i].give) .."\n"
 		end
 	end
 		meta:set_string("infotext",
