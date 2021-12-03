@@ -437,7 +437,6 @@ minetest.register_node("smartshop:shop", {
 			   if sellitem == stack:get_name() then
 			      return inv:room_for_item("main", stack)
 			   end
---			   minetest.chat_send_all(sellitem)
 			end
 			--			
 			return false
@@ -471,7 +470,6 @@ minetest.register_node("smartshop:shop", {
 							for index, stack in pairs(mainlist) do
 								sendmessage.inventory[index] = stack:to_table()
 							end
-							minetest.chat_send_all( minetest.pos_to_string(position_of_message))
 							digiline:receptor_send(position_of_message, digiline.rules.default, setchan, sendmessage)
 						elseif message.type == 'set' and message.offer then
 							for i = 1, 4, 1 do
@@ -530,7 +528,6 @@ allow_metadata_inventory_put = function(pos, listname, index, stack, player)
       local meta = minetest.get_meta(pos)
       if meta:get_int("ghost") == 1 and (string.find(listname, "pay") or string.find(listname, "give")) then
 	 local inv = minetest.get_inventory({type="node", pos=pos})
---	 minetest.chat_send_all( inv:get_stack(listname, index):get_name()..stack:get_name())
 	 if inv:get_stack(listname, index):get_name() == stack:get_name() then
 	    inv:add_item(listname, stack)
 	 else
