@@ -364,7 +364,8 @@ smartshop.showform=function(pos,player,re)
 	local creative=meta:get_int("creative")
 	local inv = meta:get_inventory()
 	local gui=""
-	local spos=pos.x .. "," .. pos.y .. "," .. pos.z	local owner=meta:get_string("owner")==player:get_player_name()
+	local spos=pos.x .. "," .. pos.y .. "," .. pos.z
+	local owner=meta:get_string("owner")==player:get_player_name()
 	if minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then owner=true end
 	if re then owner=false end
 	smartshop.user[player:get_player_name()]= {pos, owner}
