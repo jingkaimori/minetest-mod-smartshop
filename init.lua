@@ -130,7 +130,8 @@ end
 
 smartshop.receive_fields=function(player,pressed)
 	local pname = player:get_player_name()
-	local pos = smartshop.user[pname]
+	local pos = smartshop.user[pname][1]
+	local owner = smartshop.user[pname][2]
 	if not pos then
 		return
 	end
@@ -151,7 +152,8 @@ smartshop.receive_fields=function(player,pressed)
 				meta:set_int("type",0)
 				minetest.chat_send_player(pname, "Your stock is unlimited")
 			end
-		elseif pressed.channel then
+			return smartshop.showform(pos, player)
+		elseif pressed.channel and owner then
 			local meta=minetest.get_meta(pos)
 			meta:set_string("channel",pressed.channel)
 		elseif not pressed.quit then
@@ -287,8 +289,9 @@ end
 
 
 
-smartshop.update=function(pos,stat)
+smartshop.update=function(p,stat)
 --clear
+	local pos = table.copy(p) -- do not overwrite the pos table, we need it later!
 	local spos=minetest.pos_to_string(pos)
 	for _, ob in ipairs(minetest.env:get_objects_inside_radius(pos, 2)) do
 		if ob and ob:get_luaentity() and ob:get_luaentity().smartshop and ob:get_luaentity().pos==spos then
@@ -361,11 +364,10 @@ smartshop.showform=function(pos,player,re)
 	local creative=meta:get_int("creative")
 	local inv = meta:get_inventory()
 	local gui=""
-	local spos=pos.x .. "," .. pos.y .. "," .. pos.z
-	local owner=meta:get_string("owner")==player:get_player_name()
+	local spos=pos.x .. "," .. pos.y .. "," .. pos.z	local owner=meta:get_string("owner")==player:get_player_name()
 	if minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then owner=true end
 	if re then owner=false end
-	smartshop.user[player:get_player_name()]=pos
+	smartshop.user[player:get_player_name()]= {pos, owner}
 	if owner then
 	        meta:set_int("alerted",0) -- Player has been there to refill
 		gui=""
@@ -384,8 +386,10 @@ smartshop.showform=function(pos,player,re)
 		.."list[nodemeta:" .. spos .. ";pay4;5,1;1,1;]"
 		.."field[2.2,2.2;6,1;channel;;".. meta:get_string("channel") .."]"
 		if creative==1 then
-			gui=gui .."label[0.5,-0.4;Your stock is unlimited becaouse you have creative or give]"
-			.."button[6,1;2.2,1;tooglelime;Toggle limit]"
+			if meta:get_int("type")==0 then 
+				gui=gui .."label[0.5,-0.4;Your stock is unlimited because you have creative or give]"
+			end
+			gui = gui.."button[6,1;2.2,1;tooglelime;Toggle limit]"
 		end
 		gui=gui
 		.."list[nodemeta:" .. spos .. ";main;0,3;8,4;]"
@@ -454,7 +458,6 @@ minetest.register_node("smartshop:shop", {
 				---@param channel string
 				---@param message {type:'get'|'set',offer:{give:string, give_count:number, pay:string, pay_count:number}[]}
 				action = function(position_of_message, nodedef, channel, message)
-					
 					local meta = minetest.get_meta(position_of_message)
 					local setchan = meta:get_string("channel")
 					if setchan ~= channel then return end
