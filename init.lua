@@ -130,6 +130,9 @@ end
 
 smartshop.receive_fields=function(player,pressed)
 	local pname = player:get_player_name()
+	if not smartshop.user[pname] then
+		return
+	end
 	local pos = smartshop.user[pname][1]
 	local owner = smartshop.user[pname][2]
 	if not pos then
