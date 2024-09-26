@@ -83,37 +83,61 @@ smartshop.use_offer=function(pos,player,n)
 	smartshop.update(pos)
 end
 
-smartshop.get_offer=function(pos)
+smartshop.get_shop_status=function(pos, filtered)
 	if not pos or not minetest.get_node(pos) then return end
 	if minetest.get_node(pos).name~="smartshop:shop" then return end
 	local meta=minetest.get_meta(pos)
-	local inv=meta:get_inventory()
-	local offer={}
+	local inv = meta:get_inventory()
+	local offers = {}
 	for i=1,4,1 do
 		local pay_stack = inv:get_stack("pay" .. i,1);
+		local pay_name = pay_stack:get_name()
+		local give_stack = inv:get_stack("give" .. i,1);
+		local give_name = give_stack:get_name()
+
 		local give_stock = 0;
-		offer[i]={
-			give=inv:get_stack("give" .. i,1):get_name(),
-			give_count=inv:get_stack("give" .. i,1):get_count(),
-			pay=pay_stack:get_name(),
+		offers[i]={
+			give=give_name,
+			give_count=give_stack:get_count(),
+			pay=pay_name,
 			pay_count=pay_stack:get_count(),
 			stock = 0,		-- times customer can purchase before sold out
 			pay_price = 0,	-- average minegeld price of sold item, nonzero for minegeld-taking selling shop
 		}
 		local mg_price = smartshop.minegeldtonumber(pay_stack)
 		if mg_price ~= nil then
-			offer[i].pay_price = mg_price/offer[i].give_count
+			offers[i].pay_price = mg_price/offers[i].give_count
 		end
-		for ii=1,32,1 do
-			local name=inv:get_stack("main",ii):get_name()
-			local count=inv:get_stack("main",ii):get_count()
-			if name==offer[i].give then
-				give_stock = give_stock + count
+	end
+	minetest.log("warning", tostring(inv:get_lists()))
+	local mainlist = inv:get_list("main")
+	local inventory = {}
+	local give_stocks = {0,0,0,0}
+	local last_index = 0
+	for index, stack in pairs(mainlist) do
+		local name=stack:get_name()
+		for offer_index, offer_item in pairs(offers) do
+			if name == offer_item.give then
+				give_stocks[offer_index] = give_stocks[offer_index] + stack:get_count()
+			end
+
+			if filtered and name == offer_item.give or name == offer_item.pay then
+				inventory[index] = stack:to_table()
 			end
 		end
-		offer[i].stock = math.floor(give_stock/offer[i].give_count)
+		if not filtered then
+			inventory[index] = stack:to_table()
+		end
+		last_index = index
 	end
-	return offer
+	for offer_index, offer_item in pairs(offers) do
+		offer_item.stock = math.floor(give_stocks[offer_index]/offer_item.give_count)
+	end
+	return {
+		type = "shop status",
+		offer = offers,
+		inventory = inventory
+	}
 end
 
 smartshop.send_mail=function(owner, pos, item, pname)
@@ -122,6 +146,17 @@ smartshop.send_mail=function(owner, pos, item, pname)
    end
    local spos = "("..pos.x..", "..pos.y..", "..pos.z..")"
    mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock! Thanks, " .. pname)
+end
+
+if minetest.get_modpath( "digilines" ) then
+	smartshop.send_digiline_out_of_storage=function(pos, item)
+		local meta = minetest.get_meta(pos)
+		local setchan = meta:get_string( "channel" )
+		digiline:receptor_send(pos, digiline.rules.default, setchan, {type = "out of storage", item = item})
+	end
+else
+	smartshop.send_digiline_out_of_storage=function(pos, item)
+	end
 end
 
 local function is_creative(pname)
@@ -187,6 +222,7 @@ smartshop.receive_fields=function(player,pressed)
 					end
 					if type==1 and inv:contains_item("main", stack)==false then
 					   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
+					   smartshop.send_digiline_out_of_storage(pos, name)
 					   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
 					      meta:set_int("alerted",1) -- Do not alert twice
 					      smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
@@ -203,9 +239,12 @@ smartshop.receive_fields=function(player,pressed)
 						pinv:add_item("main", item)
 						item = pinv:remove_item("main",pay)
 						inv:add_item("main", item)
-						if not inv:contains_item("main", stack)  and (not meta:get_int("alerted") or meta:get_int("alerted") == 0) then
-						   meta:set_int("alerted",1) -- Do not alert twice
-						   smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
+						if not inv:contains_item("main", stack) then
+							smartshop.send_digiline_out_of_storage(pos, name)
+							if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
+						   		meta:set_int("alerted",1) -- Do not alert twice
+						   		smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
+							end
 						end
 					end
 				end
@@ -467,18 +506,15 @@ minetest.register_node("smartshop:shop", {
 					if setchan ~= channel then return end
 
 					if type(message) == 'table' and type(message.type) =='string' then
-						local inventory = meta:get_inventory();
 						if message.type == 'get' then
-							local mainlist = inventory:get_list('main')
-							local sendmessage = {
-								offer = smartshop.get_offer(position_of_message),
-								inventory = {},
-							}
-							for index, stack in pairs(mainlist) do
-								sendmessage.inventory[index] = stack:to_table()
+							local filtered = false
+							if message.only_items_on_sale_or_buy then
+								filtered = true
 							end
+							local sendmessage = smartshop.get_shop_status(position_of_message, filtered)
 							digiline:receptor_send(position_of_message, digiline.rules.default, setchan, sendmessage)
 						elseif message.type == 'set' and message.offer then
+							local inventory = meta:get_inventory();
 							for i = 1, 4, 1 do
 								local current_offer = message.offer[i]
 								if type(current_offer)=='table' and current_offer.give and current_offer.pay then
