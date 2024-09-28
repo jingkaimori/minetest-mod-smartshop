@@ -148,13 +148,20 @@ smartshop.send_mail=function(owner, pos, item, pname)
 end
 
 if minetest.get_modpath( "digilines" ) then
-	smartshop.send_digiline_out_of_storage=function(pos, item)
+	smartshop.send_digiline_out_of_storage=function(pos, item, offer_index)
 		local meta = minetest.get_meta(pos)
 		local setchan = meta:get_string( "channel" )
-		digiline:receptor_send(pos, digiline.rules.default, setchan, {type = "out of storage", item = item})
+		digiline:receptor_send(pos, digiline.rules.default, setchan, {type = "out of storage", item = item, offer_index = offer_index})
+	end
+	smartshop.send_digiline_deal_complete=function(pos, item, offer_index)
+		local meta = minetest.get_meta(pos)
+		local setchan = meta:get_string( "channel" )
+		digiline:receptor_send(pos, digiline.rules.default, setchan, {type = "deal complete", item = item, offer_index = offer_index})
 	end
 else
-	smartshop.send_digiline_out_of_storage=function(pos, item)
+	smartshop.send_digiline_out_of_storage=function(pos, item, offer_index)
+	end
+	smartshop.send_digiline_deal_complete=function(pos, item, offer_index)
 	end
 end
 
@@ -221,7 +228,7 @@ smartshop.receive_fields=function(player,pressed)
 					end
 					if type==1 and inv:contains_item("main", stack)==false then
 					   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
-					   smartshop.send_digiline_out_of_storage(pos, name)
+					   smartshop.send_digiline_out_of_storage(pos, name, n)
 					   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
 					      meta:set_int("alerted",1) -- Do not alert twice
 					      smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
@@ -239,13 +246,14 @@ smartshop.receive_fields=function(player,pressed)
 						item = pinv:remove_item("main",pay)
 						inv:add_item("main", item)
 						if not inv:contains_item("main", stack) then
-							smartshop.send_digiline_out_of_storage(pos, name)
+							smartshop.send_digiline_out_of_storage(pos, name, n)
 							if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
 						   		meta:set_int("alerted",1) -- Do not alert twice
 						   		smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
 							end
 						end
 					end
+					smartshop.send_digiline_deal_complete(pos, name, n)
 				end
 			end
 		else
@@ -410,7 +418,7 @@ smartshop.showform=function(pos,player,re)
 	smartshop.user[player:get_player_name()]= {pos, owner}
 	if owner then
 		local creative=meta:get_int("creative")
-	        meta:set_int("alerted",0) -- Player has been there to refill
+		meta:set_int("alerted",0) -- Player has been there to refill
 		gui=""
 		.."size[8,11]"
 		.."button_exit[6,0;1.5,1;customer;Customer]"

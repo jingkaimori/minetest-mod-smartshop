@@ -97,12 +97,25 @@ digiline_send('channel', {
 
 ## notify on run out of items
 
-Message will be received on the same channel set on smartshop, and looks like this:
+When smart shop run out of items, or customer request an item which is already sold out, message will be sent by smartshop on the same channel set by owner of smartshop. Message is a table, and its fields should be like this:
 
 ```lua
 {
     type = "out of storage",
-    item = "basenodes:dirt"
+    item = "basenodes:dirt",
+    offer_index = 2
+}
+```
+
+## notify on deal completed
+
+When a deal is completed, in other words, an item is sold and corresponding price is received, message will be sent by smartshop on the same channel set by owner of smartshop. Message is a table, and its fields should be like this:
+
+```lua
+{
+    type = "deal complete",
+    item = "basenodes:dirt",
+    offer_index = 2
 }
 ```
 
