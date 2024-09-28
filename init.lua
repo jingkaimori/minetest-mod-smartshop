@@ -109,7 +109,6 @@ smartshop.get_shop_status=function(pos, filtered)
 			offers[i].pay_price = mg_price/offers[i].give_count
 		end
 	end
-	minetest.log("warning", tostring(inv:get_lists()))
 	local mainlist = inv:get_list("main")
 	local inventory = {}
 	local give_stocks = {0,0,0,0}
@@ -403,8 +402,6 @@ minetest.register_entity("smartshop:item",{
 
 smartshop.showform=function(pos,player,re)
 	local meta=minetest.get_meta(pos)
-	local creative=meta:get_int("creative")
-	local inv = meta:get_inventory()
 	local gui=""
 	local spos=pos.x .. "," .. pos.y .. "," .. pos.z
 	local owner=meta:get_string("owner")==player:get_player_name()
@@ -412,6 +409,7 @@ smartshop.showform=function(pos,player,re)
 	if re then owner=false end
 	smartshop.user[player:get_player_name()]= {pos, owner}
 	if owner then
+		local creative=meta:get_int("creative")
 	        meta:set_int("alerted",0) -- Player has been there to refill
 		gui=""
 		.."size[8,11]"
@@ -440,6 +438,7 @@ smartshop.showform=function(pos,player,re)
 		.."listring[nodemeta:" .. spos .. ";main]"
 		.."listring[current_player;main]"
 	else
+		local inv = meta:get_inventory()
 		gui=""
 		.."size[8,6]"
 		.."list[current_player;main;0,2.2;8,4;]"
