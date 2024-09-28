@@ -532,6 +532,8 @@ minetest.register_node("smartshop:shop", {
 								end
 							end
 						end
+						smartshop.update_info(position_of_message)
+						smartshop.update(position_of_message, "update")
 					end
 				end
 			}
