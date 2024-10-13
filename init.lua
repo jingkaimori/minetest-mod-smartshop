@@ -453,13 +453,13 @@ smartshop.showform=function(pos,player,re)
 		.."label[0,0.2;Item:]"
 		.."label[0,1.2;Price:]"
 		.."list[nodemeta:" .. spos .. ";give1;2,0;1,1;]"
-		.."item_image_button[2,1;1,1;".. inv:get_stack("pay1",1):get_name() ..";buy1;\n\n\b\b\b\b\b" .. inv:get_stack("pay1",1):get_count() .."]"
+		.."item_image_button[2,1;1,1;".. inv:get_stack("pay1",1):to_string() ..";buy1;]"
 		.."list[nodemeta:" .. spos .. ";give2;3,0;1,1;]"
-		.."item_image_button[3,1;1,1;".. inv:get_stack("pay2",1):get_name() ..";buy2;\n\n\b\b\b\b\b" .. inv:get_stack("pay2",1):get_count() .."]"
+		.."item_image_button[3,1;1,1;".. inv:get_stack("pay2",1):to_string() ..";buy2;]"
 		.."list[nodemeta:" .. spos .. ";give3;4,0;1,1;]"
-		.."item_image_button[4,1;1,1;".. inv:get_stack("pay3",1):get_name() ..";buy3;\n\n\b\b\b\b\b" .. inv:get_stack("pay3",1):get_count() .."]"
+		.."item_image_button[4,1;1,1;".. inv:get_stack("pay3",1):to_string() ..";buy3;]"
 		.."list[nodemeta:" .. spos .. ";give4;5,0;1,1;]"
-		.."item_image_button[5,1;1,1;".. inv:get_stack("pay4",1):get_name() ..";buy4;\n\n\b\b\b\b\b" .. inv:get_stack("pay4",1):get_count() .."]"
+		.."item_image_button[5,1;1,1;".. inv:get_stack("pay4",1):to_string() ..";buy4;]"
 	end
 	minetest.after((0.1), function(gui)
 		return minetest.show_formspec(player:get_player_name(), "smartshop.showform",gui)
