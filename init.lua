@@ -1,4 +1,4 @@
-smartshop={user={},tmp={},dir={{x=0,y=0,z=-1},{x=-1,y=0,z=0},{x=0,y=0,z=1},{x=1,y=0,z=0}},dpos={
+smartshop={tmp={},dir={{x=0,y=0,z=-1},{x=-1,y=0,z=0},{x=0,y=0,z=1},{x=1,y=0,z=0}},dpos={
 {{x=0.2,y=0.2,z=0},{x=-0.2,y=0.2,z=0},{x=0.2,y=-0.2,z=0},{x=-0.2,y=-0.2,z=0}},
 {{x=0,y=0.2,z=0.2},{x=0,y=0.2,z=-0.2},{x=0,y=-0.2,z=0.2},{x=0,y=-0.2,z=-0.2}},
 {{x=-0.2,y=0.2,z=0},{x=0.2,y=0.2,z=0},{x=-0.2,y=-0.2,z=0},{x=0.2,y=-0.2,z=0}},
@@ -72,15 +72,6 @@ smartshop.get_human_name = function(item)
    else
       return "Unknown Item"
    end
-end
-
-smartshop.use_offer=function(pos,player,n)
-	local pressed={}
-	pressed["buy" .. n]=true
-	smartshop.user[player:get_player_name()]=pos
-	smartshop.receive_fields(player,pressed)
-	smartshop.user[player:get_player_name()]=nil
-	smartshop.update(pos)
 end
 
 smartshop.get_shop_status=function(pos, filtered)
@@ -169,111 +160,80 @@ local function is_creative(pname)
 	return minetest.check_player_privs(pname, {creative=true}) or minetest.check_player_privs(pname, {give=true})
 end
 
-smartshop.receive_fields=function(player,pressed)
-	local pname = player:get_player_name()
-	if not smartshop.user[pname] then
-		return
+smartshop.process_trade=function(pos, player, pname, pressed)
+	local n=1
+	for i=1,4,1 do
+		n=i
+		if pressed["buy" .. i] then break end
 	end
-	local pos = smartshop.user[pname][1]
-	local owner = smartshop.user[pname][2]
-	if not pos then
-		return
-	end
-		if pressed.customer then
-			return smartshop.showform(pos, player, true)
-		elseif pressed.tooglelime then
-			local meta=minetest.get_meta(pos)
-			if not is_creative(pname) then
-				meta:set_int("type", 1)
-				meta:set_int("creative", 0)
-				minetest.chat_send_player(pname, "You are not allowed to make a creative shop!")
-				return
+	local meta=minetest.get_meta(pos)
+	local type=meta:get_int("type")
+	local inv=meta:get_inventory()
+	local pinv=player:get_inventory()
+	if pressed["buy" .. n] then
+		local stack=inv:get_stack("give" .. n,1)
+		local name=stack:get_name()
+		local pay=inv:get_stack("pay" .. n,1)
+		if name~="" then
+			if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owner's stock is full, can't receive, exchange aborted.") return end
+			if meta:get_int("ghost") ~=1 then
+			   -- transition shops to ghost inventory.
+			   for i=1,4 do
+				  if inv:room_for_item("main", "pay"..i) and inv:room_for_item("main", "give"..i) then
+						meta:set_int("ghost", 1)
+						inv:add_item("main", inv:get_stack("pay"..i,1))
+						inv:add_item("main", inv:get_stack("give"..i,1))
+				  end
+			   end
 			end
-			if meta:get_int("type")==0 then
-				meta:set_int("type",1)
-				minetest.chat_send_player(pname, "Your stock is limited")
+			if type==1 and inv:contains_item("main", stack)==false then
+			   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
+			   smartshop.send_digiline_out_of_storage(pos, name, n)
+			   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
+				  meta:set_int("alerted",1) -- Do not alert twice
+				  smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
+			   end
+			   return
+			end
+			if not pinv:contains_item("main", pay) then minetest.chat_send_player(pname, "Error: You don't have enough in your inventory to buy this, exchange aborted.") return end
+			if not pinv:room_for_item("main", stack) then minetest.chat_send_player(pname, "Error: Your inventory is full, exchange aborted.") return end
+			if type == 0 then
+				pinv:remove_item("main", pay)
+				pinv:add_item("main", stack)
 			else
-				meta:set_int("type",0)
-				minetest.chat_send_player(pname, "Your stock is unlimited")
-			end
-			return smartshop.showform(pos, player)
-		elseif pressed.channel and owner then
-			local meta=minetest.get_meta(pos)
-			meta:set_string("channel",pressed.channel)
-		elseif not pressed.quit then
-			local n=1
-			for i=1,4,1 do
-				n=i
-				if pressed["buy" .. i] then break end
-			end
-			local meta=minetest.get_meta(pos)
-			local type=meta:get_int("type")
-			local inv=meta:get_inventory()
-			local pinv=player:get_inventory()
-			if pressed["buy" .. n] then
-				local stack=inv:get_stack("give" .. n,1)
-				local name=stack:get_name()
-				local pay=inv:get_stack("pay" .. n,1)
-				if name~="" then
-					if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owner's stock is full, can't receive, exchange aborted.") return end
-					if meta:get_int("ghost") ~=1 then
-					   -- transition shops to ghost inventory.
-					   for i=1,4 do
-					      if inv:room_for_item("main", "pay"..i) and inv:room_for_item("main", "give"..i) then
-								meta:set_int("ghost", 1)
-								inv:add_item("main", inv:get_stack("pay"..i,1))
-								inv:add_item("main", inv:get_stack("give"..i,1))
-					      end
-					   end
+				local item = inv:remove_item("main", stack)
+				pinv:add_item("main", item)
+				item = pinv:remove_item("main",pay)
+				inv:add_item("main", item)
+				if not inv:contains_item("main", stack) then
+					smartshop.send_digiline_out_of_storage(pos, name, n)
+					if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
+						   meta:set_int("alerted",1) -- Do not alert twice
+						   smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
 					end
-					if type==1 and inv:contains_item("main", stack)==false then
-					   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
-					   smartshop.send_digiline_out_of_storage(pos, name, n)
-					   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
-					      meta:set_int("alerted",1) -- Do not alert twice
-					      smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
-					   end
-					   return
-					end
-					if not pinv:contains_item("main", pay) then minetest.chat_send_player(pname, "Error: You don't have enough in your inventory to buy this, exchange aborted.") return end
-					if not pinv:room_for_item("main", stack) then minetest.chat_send_player(pname, "Error: Your inventory is full, exchange aborted.") return end
-					if type == 0 then
-						pinv:remove_item("main", pay)
-						pinv:add_item("main", stack)
-					else
-						local item = inv:remove_item("main", stack)
-						pinv:add_item("main", item)
-						item = pinv:remove_item("main",pay)
-						inv:add_item("main", item)
-						if not inv:contains_item("main", stack) then
-							smartshop.send_digiline_out_of_storage(pos, name, n)
-							if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
-						   		meta:set_int("alerted",1) -- Do not alert twice
-						   		smartshop.send_mail(meta:get_string("owner"), pos, name, pname)
-							end
-						end
-					end
-					smartshop.send_digiline_deal_complete(pos, name, n)
 				end
 			end
-		else
-			smartshop.update_info(pos)
-			local meta = minetest.get_meta(pos)
-			if meta:get_string("owner") == pname then
-				smartshop.update(pos, "update")
-			end
-			smartshop.user[pname] = nil
+			smartshop.send_digiline_deal_complete(pos, name, n)
 		end
+	end
 end
 
-minetest.register_on_player_receive_fields(function(player, form, pressed)
-	if form=="smartshop.showform" then
-		smartshop.receive_fields(player,pressed)
+smartshop.toggle_limit=function(pos, pname)
+	local meta = minetest.get_meta(pos)
+	if not is_creative(pname) then
+		meta:set_int("type", 1)
+		meta:set_int("creative", 0)
+		minetest.chat_send_player(pname, "You are not allowed to make a creative shop!")
+		return
 	end
-end)
-
-
-
+	if meta:get_int("type")==0 then
+		meta:set_int("type",1)
+		minetest.chat_send_player(pname, "Your stock is limited")
+	else
+		meta:set_int("type",0)
+		minetest.chat_send_player(pname, "Your stock is unlimited")
+	end
+end
 
 smartshop.update_info=function(pos)
         if not pos then
@@ -408,20 +368,18 @@ minetest.register_entity("smartshop:item",{
 })
 
 
-smartshop.showform=function(pos,player,re)
+smartshop.get_formspec=function(pos, player, force_customer)
 	local meta=minetest.get_meta(pos)
-	local gui=""
 	local spos=pos.x .. "," .. pos.y .. "," .. pos.z
 	local owner=meta:get_string("owner")==player:get_player_name()
 	if minetest.check_player_privs(player:get_player_name(), {protection_bypass=true}) then owner=true end
-	if re then owner=false end
-	smartshop.user[player:get_player_name()]= {pos, owner}
+	if force_customer then owner=false end
 	if owner then
 		local creative=meta:get_int("creative")
 		meta:set_int("alerted",0) -- Player has been there to refill
-		gui=""
+		local gui = ""
 		.."size[8,11]"
-		.."button_exit[6,0;1.5,1;customer;Customer]"
+		..smartshop.customer_button_formspec
 		.."label[0,0.2;Item:]"
 		.."label[0,1.2;Price:]"
 		.."label[0,2.2;Channel:]"
@@ -436,7 +394,7 @@ smartshop.showform=function(pos,player,re)
 		.."field[2.2,2.2;6,1;channel;;".. meta:get_string("channel") .."]"
 		if creative==1 then
 			if meta:get_int("type")==0 then 
-				gui=gui .."label[0.5,-0.4;Your stock is unlimited because you have creative or give]"
+				gui = gui .."label[0.5,-0.4;Your stock is unlimited because you have creative or give]"
 			end
 			gui = gui.."button[6,1;2.2,1;tooglelime;Toggle limit]"
 		end
@@ -445,9 +403,10 @@ smartshop.showform=function(pos,player,re)
 		.."list[current_player;main;0,7.2;8,4;]"
 		.."listring[nodemeta:" .. spos .. ";main]"
 		.."listring[current_player;main]"
+		return gui, owner
 	else
 		local inv = meta:get_inventory()
-		gui=""
+		local gui = ""
 		.."size[8,6]"
 		.."list[current_player;main;0,2.2;8,4;]"
 		.."label[0,0.2;Item:]"
@@ -460,10 +419,104 @@ smartshop.showform=function(pos,player,re)
 		.."item_image_button[4,1;1,1;".. inv:get_stack("pay3",1):to_string() ..";buy3;]"
 		.."list[nodemeta:" .. spos .. ";give4;5,0;1,1;]"
 		.."item_image_button[5,1;1,1;".. inv:get_stack("pay4",1):to_string() ..";buy4;]"
+		return gui, owner
 	end
-	minetest.after((0.1), function(gui)
-		return minetest.show_formspec(player:get_player_name(), "smartshop.showform",gui)
-	end, gui)
+end
+
+-- define ui and event handler of smartshop, depending on if active formspec is installed
+if minetest.get_modpath( "formspecs" ) then
+	smartshop.customer_button_formspec = "button[6,0;1.5,1;customer;Customer]"
+	smartshop.open_formspec=function(pos, player)
+		if not pos then
+			minetest.log("error", "No position provided when opening formspec")
+			return
+		end
+		local gui, owner = smartshop.get_formspec(pos, player, false)
+		local pname = player:get_player_name()
+		local on_event = function(state, _player, fields)
+			if fields.customer then
+				minetest.update_form(pname, smartshop.get_formspec(pos, player, true))
+				return
+			elseif fields.tooglelime then
+				smartshop.toggle_limit(pos, pname)
+				minetest.update_form(pname, smartshop.get_formspec(pos, player, false))
+			elseif fields.channel and owner then
+				local meta=minetest.get_meta(pos)
+				meta:set_string("channel",fields.channel)
+			elseif not fields.quit then
+				smartshop.process_trade(pos, player, pname, fields)
+			else
+				smartshop.update_info(pos)
+				local meta = minetest.get_meta(pos)
+				if meta:get_string("owner") == pname then
+					smartshop.update(pos, "update")
+				end
+			end
+		end
+		minetest.create_form(nil, pname, gui, on_event)
+	end
+else
+	smartshop.customer_button_formspec = "button_exit[6,0;1.5,1;customer;Customer]"
+	smartshop.open_formspec=function(pos,player)
+		smartshop.showform(pos,player)
+	end
+	
+	smartshop.user = {}
+
+	smartshop.showform=function(pos,player,re)
+		local gui, owner = smartshop.get_formspec(pos, player, re)
+		
+		smartshop.user[player:get_player_name()]= {pos, owner}
+		minetest.after((0.1), function(gui)
+			return minetest.show_formspec(player:get_player_name(), "smartshop.showform",gui)
+		end, gui)
+	end
+	smartshop.receive_fields=function(player,pressed)
+		-- for key,value in pairs(pressed) do
+		-- 	minetest.log("info", key .. ":\t" .. tostring(value))
+		-- end
+		local pname = player:get_player_name()
+		if not smartshop.user[pname] then
+			return
+		end
+		local pos = smartshop.user[pname][1]
+		local owner = smartshop.user[pname][2]
+		if not pos then
+			return
+		end
+			if pressed.customer then
+				return smartshop.showform(pos, player, true)
+			elseif pressed.tooglelime then
+				smartshop.toggle_limit(pos, pname)
+				return smartshop.showform(pos, player)
+			elseif pressed.channel and owner then
+				local meta=minetest.get_meta(pos)
+				meta:set_string("channel", pressed.channel)
+			elseif not pressed.quit then
+				smartshop.process_trade(pos, player, pname, pressed)
+			else
+				smartshop.update_info(pos)
+				local meta = minetest.get_meta(pos)
+				if meta:get_string("owner") == pname then
+					smartshop.update(pos, "update")
+				end
+				smartshop.user[pname] = nil
+			end
+	end	
+	smartshop.use_offer=function(pos,player,n)
+		local pressed={}
+		pressed["buy" .. n]=true
+		smartshop.user[player:get_player_name()]=pos
+		smartshop.receive_fields(player,pressed)
+		smartshop.user[player:get_player_name()]=nil
+		smartshop.update(pos)
+	end
+
+	minetest.register_on_player_receive_fields(function(player, form, pressed)
+		if form=="smartshop.showform" then
+			smartshop.receive_fields(player,pressed)
+		end
+	end)
 end
 
 minetest.register_node("smartshop:shop", {
@@ -572,7 +625,7 @@ on_construct = function(pos)
 		meta:set_int("ghost", 1)
 	end,
 on_rightclick = function(pos, node, player, itemstack, pointed_thing)
-		smartshop.showform(pos,player)
+		smartshop.open_formspec(pos,player)
 		smartshop.update(pos, "update")
 	end,
 allow_metadata_inventory_put = function(pos, listname, index, stack, player)
