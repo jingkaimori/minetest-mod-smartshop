@@ -423,6 +423,39 @@ smartshop.get_formspec=function(pos, player, force_customer)
 	end
 end
 
+smartshop.init_offer_change = function(pos)
+	local res = {}
+	local meta=minetest.get_meta(pos)
+	local inv = meta:get_inventory()
+	for i=1,4 do
+		res[i] = {
+			give = inv:get_stack("give"..i,1),
+			pay = inv:get_stack("pay"..i,1)
+		}
+	end
+	return res
+end
+
+smartshop.check_offer_unchange = function(pos, privous_orders, fields)
+	for i=1,4 do
+		if fields["buy" .. i] then
+			local meta=minetest.get_meta(pos)
+			local inv = meta:get_inventory()
+			local give = inv:get_stack("give"..i,1)
+			local pay = inv:get_stack("pay"..i,1)
+			local unchanged = give:equals(privous_orders[i].give) and pay:equals(privous_orders[i].pay)
+			if not unchanged then
+				privous_orders[i] = {
+					give = give,
+					pay = pay
+				}
+			end
+			return unchanged, i
+		end
+	end
+	return true, 0
+end
+
 -- define ui and event handler of smartshop, depending on if active formspec is installed
 if minetest.get_modpath( "formspecs" ) then
 	smartshop.customer_button_formspec = "button[6,0;1.5,1;customer;Customer]"
@@ -433,9 +466,12 @@ if minetest.get_modpath( "formspecs" ) then
 		end
 		local gui, owner = smartshop.get_formspec(pos, player, false)
 		local pname = player:get_player_name()
+		local offers = smartshop.init_offer_change(pos)
+		local force_customer = false
 		local on_event = function(state, _player, fields)
 			if fields.customer then
-				minetest.update_form(pname, smartshop.get_formspec(pos, player, true))
+				force_customer = true
+				minetest.update_form(pname, smartshop.get_formspec(pos, player, force_customer))
 				return
 			elseif fields.tooglelime then
 				smartshop.toggle_limit(pos, pname)
@@ -444,7 +480,13 @@ if minetest.get_modpath( "formspecs" ) then
 				local meta=minetest.get_meta(pos)
 				meta:set_string("channel",fields.channel)
 			elseif not fields.quit then
-				smartshop.process_trade(pos, player, pname, fields)
+				local unchanged, index = smartshop.check_offer_unchange(pos, offers, fields)
+				if unchanged then
+					smartshop.process_trade(pos, player, pname, fields)
+				else
+					minetest.chat_send_player(pname, "Warn: Offer of slot #" .. index .. " is changed, please confirm updated price. Click again to perform trade.")
+					minetest.update_form(pname, smartshop.get_formspec(pos, player, force_customer))
+				end
 			else
 				smartshop.update_info(pos)
 				local meta = minetest.get_meta(pos)
