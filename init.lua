@@ -617,6 +617,13 @@ minetest.register_node("smartshop:shop", {
 							digiline:receptor_send(position_of_message, digiline.rules.default, setchan, sendmessage)
 						elseif message.type == 'set' and message.offer then
 							local inventory = meta:get_inventory();
+							if meta:get_int("ghost") ~= 1 then
+								digiline:receptor_send(position_of_message, digiline.rules.default, setchan, {
+									type = "unsupported shop",
+									item = "this shop is constructed in old version of smartshop, thus set instruction is not supported, please upgrade it"
+								})
+								return
+							end
 							for i = 1, 4, 1 do
 								local current_offer = message.offer[i]
 								if type(current_offer)=='table' and current_offer.give and current_offer.pay then
