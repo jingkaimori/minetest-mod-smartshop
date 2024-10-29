@@ -1,0 +1,3 @@
+.git*				export-ignore
+munin-grapher.pl	export-ignore
+*.zip				export-ignore
