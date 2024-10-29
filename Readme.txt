@@ -1,5 +1,5 @@
 Licenses: code and media CC0
-Version: 4r
+Version: 5
 Name: smartshop
 Created by: UjEdwin
 
@@ -19,3 +19,10 @@ Additions by gpcf:
   - Mail support: Smartshops send mails out if stock is empty
   - Statistics: Smartshops make statistics on prices and stock
   - Smartshops only accept items they sell via pipeworks
+Additions by jingkaimori:
+  - Mail support: works for both version 1 and version 3 of mail mod
+  - Digiline support: Offers of smartshop can be changed by digiline message,
+    and smartshop can response to queries from digiline, and send message when
+    stock is empty. See doc/api.md for more details.
+  - If price is changed, twice confirmation is required to avoid potential fraud.
+    ActiveFormspec mod is required for this feature.

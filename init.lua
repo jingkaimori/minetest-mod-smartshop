@@ -39,22 +39,30 @@ smartshop.itempriceatpos = function(pos, item, price)
 end
 
 smartshop.minegeldtonumber = function(stack)
-   -- return number of minegeld in stack, returns nil if stack is not composed of minegeld
-   count = stack:get_count()
-   if count == 0 then
-      return 0
-   end
-   if stack:get_name() == "currency:minegeld" then
-      return count
-   elseif stack:get_name() == "currency:minegeld_5" then
-      return count * 5
-   elseif stack:get_name() == "currency:minegeld_10" then
-      return count * 10
-   elseif stack:get_name() == "currency:minegeld_50" then
-      return count * 50
-   else
-      return nil
-   end
+	-- return number of minegeld in stack, returns nil if stack is not composed of minegeld
+	count = stack:get_count()
+	if count == 0 then
+		return 0
+	end
+	if stack:get_name() == "currency:minegeld" then
+		return count
+	elseif stack:get_name() == "currency:minegeld_5" then
+		return count * 5
+	elseif stack:get_name() == "currency:minegeld_10" then
+		return count * 10
+	elseif stack:get_name() == "currency:minegeld_50" then
+		return count * 50
+	elseif stack:get_name() == "currency:minegeld_100" then
+		return count * 100
+	elseif stack:get_name() == "currency:minegeld_cent_5" then
+		return count * 0.05
+	elseif stack:get_name() == "currency:minegeld_cent_10" then
+		return count * 0.1
+	elseif stack:get_name() == "currency:minegeld_cent_25" then
+		return count * 0.25
+	else
+		return nil
+	end
 end
 
 
@@ -130,12 +138,28 @@ smartshop.get_shop_status=function(pos, filtered)
 	}
 end
 
-smartshop.send_mail=function(owner, pos, item, pname)
-   if not minetest.get_modpath( "mail" ) then
-      return
-   end
-   local spos = "("..pos.x..", "..pos.y..", "..pos.z..")"
-   mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock! Thanks, " .. pname)
+if minetest.get_modpath( "mail" ) then
+	if mail.version == nil or mail.version < 3 then
+		-- api receives argument tuple
+		smartshop.send_mail=function(owner, pos, item, pname)
+			local spos = "("..pos.x..", "..pos.y..", "..pos.z..")"
+			mail.send("DO NOT REPLY", owner, "Out of "..smartshop.get_human_name(item).." at "..spos, "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock! Thanks, " .. pname)
+		end
+	else
+		-- api receives table
+		smartshop.send_mail=function(owner, pos, item, pname)
+			local spos = "("..pos.x..", "..pos.y..", "..pos.z..")"
+			mail.send({
+				from = "DO NOT REPLY",
+				to = owner,
+				subject = "Out of "..smartshop.get_human_name(item).." at "..spos,
+				body = "Your smartshop at "..spos.." is out of "..smartshop.get_human_name(item)..". Please restock! Thanks, " .. pname
+			})
+		end
+	end
+else
+	smartshop.send_mail=function(owner, pos, item, pname)
+	end
 end
 
 if minetest.get_modpath( "digilines" ) then
