@@ -411,13 +411,13 @@ smartshop.get_formspec=function(pos, player, force_customer)
 		.."list[current_player;main;0,2.2;8,4;]"
 		.."label[0,0.2;Item:]"
 		.."label[0,1.2;Price:]"
-		.."list[nodemeta:" .. spos .. ";give1;2,0;1,1;]"
+		.."item_image[2,0;1,1;".. inv:get_stack("give1",1):to_string() .. "]"
 		.."item_image_button[2,1;1,1;".. inv:get_stack("pay1",1):to_string() ..";buy1;]"
-		.."list[nodemeta:" .. spos .. ";give2;3,0;1,1;]"
+		.."item_image[3,0;1,1;".. inv:get_stack("give2",1):to_string() .. "]"
 		.."item_image_button[3,1;1,1;".. inv:get_stack("pay2",1):to_string() ..";buy2;]"
-		.."list[nodemeta:" .. spos .. ";give3;4,0;1,1;]"
+		.."item_image[4,0;1,1;".. inv:get_stack("give3",1):to_string() .. "]"
 		.."item_image_button[4,1;1,1;".. inv:get_stack("pay3",1):to_string() ..";buy3;]"
-		.."list[nodemeta:" .. spos .. ";give4;5,0;1,1;]"
+		.."item_image[5,0;1,1;".. inv:get_stack("give4",1):to_string() .. "]"
 		.."item_image_button[5,1;1,1;".. inv:get_stack("pay4",1):to_string() ..";buy4;]"
 		return gui, owner
 	end
