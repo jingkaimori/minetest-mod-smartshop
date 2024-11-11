@@ -1,0 +1,116 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2024 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-10-30 13:04+0800\n"
+"PO-Revision-Date: 2024-10-30 12:52+0800\n"
+"Last-Translator: <jingkaimori@gmail.com>\n"
+"Language-Team: Chinese (simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: init.lua:206
+msgid "Error: The owner's stock is full, can't receive, exchange aborted."
+msgstr "商店的存储空间已满，无法接收更多物品，交易取消"
+
+#: init.lua:220
+msgid "Error: @1 is sold out."
+msgstr "错误：@1已售罄"
+
+#: init.lua:229
+msgid ""
+"Error: You don't have enough in your inventory to buy this, exchange aborted."
+msgstr "没有足够的物品以支付价格，交易取消"
+
+#: init.lua:233
+msgid "Error: Your inventory is full, exchange aborted."
+msgstr "物品栏已满，交易取消"
+
+#: init.lua:262
+msgid "You are not allowed to make a creative shop!"
+msgstr "由于你没有创造权限，无法创建创造模式商店"
+
+#: init.lua:267
+msgid "Your stock is limited"
+msgstr "商店的存货是有限的"
+
+#: init.lua:270
+msgid "Your stock is unlimited"
+msgstr "商店的存货是无限的"
+
+#: init.lua:283
+msgid "(Smartshop by @1) Stock is unlimited"
+msgstr "(@1 的商店) 无限商品"
+
+#: init.lua:326
+msgid ""
+"(Smartshop by @1) Purchases left:\n"
+"@2"
+msgstr ""
+"(@1 的商店) 剩余商品:\n"
+"@2"
+
+#: init.lua:419 init.lua:448
+msgid "Item:"
+msgstr "商品:"
+
+#: init.lua:420 init.lua:449
+msgid "Price:"
+msgstr "价格:"
+
+#: init.lua:421
+msgid "Channel:"
+msgstr "频道:"
+
+#: init.lua:433
+msgid "Your stock is unlimited because you have creative or give"
+msgstr "检测到您有creative或give权限，商店可以提供无限商品"
+
+#: init.lua:435
+msgid "Toggle limit"
+msgstr "切换无限/有限商品"
+
+#: init.lua:497 init.lua:538
+msgid "Customer"
+msgstr "打开顾客界面"
+
+#: init.lua:524
+msgid ""
+"Warn: Offer of slot #@1 is changed, please confirm updated price. Click "
+"again to perform trade."
+msgstr "警告: 展位#@1的交易发生改变，请确认更新后的价格。再次点击按钮以交易"
+
+#: init.lua:818
+msgid "Get statstics of items sold by smartshop"
+msgstr "统计某类商品的销售情况"
+
+#: init.lua:823
+msgid "Usage: @1"
+msgstr "用法: @1"
+
+#: init.lua:829
+msgid "Number of items: @1"
+msgstr "商品在售数量: @1"
+
+#: init.lua:830
+msgid "Number of shops offering item: @1"
+msgstr "上架该商品的商店数量: @1"
+
+#: init.lua:835
+msgid "Average price: @1"
+msgstr "平均价格: @1"
+
+#: init.lua:845
+msgid "could not write to file"
+msgstr "无法保存统计文件"
+
+#: init.lua:856
+msgid "Save stastics to disk manually"
+msgstr "手动保存统计文件"

@@ -1,0 +1,115 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-10-30 13:07+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: init.lua:206
+msgid "Error: The owner's stock is full, can't receive, exchange aborted."
+msgstr ""
+
+#: init.lua:220
+msgid "Error: @1 is sold out."
+msgstr ""
+
+#: init.lua:229
+msgid ""
+"Error: You don't have enough in your inventory to buy this, exchange aborted."
+msgstr ""
+
+#: init.lua:233
+msgid "Error: Your inventory is full, exchange aborted."
+msgstr ""
+
+#: init.lua:262
+msgid "You are not allowed to make a creative shop!"
+msgstr ""
+
+#: init.lua:267
+msgid "Your stock is limited"
+msgstr ""
+
+#: init.lua:270
+msgid "Your stock is unlimited"
+msgstr ""
+
+#: init.lua:283
+msgid "(Smartshop by @1) Stock is unlimited"
+msgstr ""
+
+#: init.lua:326
+msgid ""
+"(Smartshop by @1) Purchases left:\n"
+"@2"
+msgstr ""
+
+#: init.lua:419 init.lua:448
+msgid "Item:"
+msgstr ""
+
+#: init.lua:420 init.lua:449
+msgid "Price:"
+msgstr ""
+
+#: init.lua:421
+msgid "Channel:"
+msgstr ""
+
+#: init.lua:433
+msgid "Your stock is unlimited because you have creative or give"
+msgstr ""
+
+#: init.lua:435
+msgid "Toggle limit"
+msgstr ""
+
+#: init.lua:497 init.lua:538
+msgid "Customer"
+msgstr ""
+
+#: init.lua:524
+msgid ""
+"Warn: Offer of slot #@1 is changed, please confirm updated price. Click "
+"again to perform trade."
+msgstr ""
+
+#: init.lua:818
+msgid "Get statstics of items sold by smartshop"
+msgstr ""
+
+#: init.lua:823
+msgid "Usage: @1"
+msgstr ""
+
+#: init.lua:829
+msgid "Number of items: @1"
+msgstr ""
+
+#: init.lua:830
+msgid "Number of shops offering item: @1"
+msgstr ""
+
+#: init.lua:835
+msgid "Average price: @1"
+msgstr ""
+
+#: init.lua:845
+msgid "could not write to file"
+msgstr ""
+
+#: init.lua:856
+msgid "Save stastics to disk manually"
+msgstr ""

@@ -74,6 +74,9 @@ minetest.register_craft({
 		{"default:sign_wall_wood", "default:torch", "default:sign_wall_wood"},
 	}
 })
+
+local S, NS = minetest.get_translator("smartshop")
+
 smartshop.get_human_name = function(item)
    if core.registered_items[item] then
       return core.registered_items[item].description
@@ -199,7 +202,10 @@ smartshop.process_trade=function(pos, player, pname, pressed)
 		local name=stack:get_name()
 		local pay=inv:get_stack("pay" .. n,1)
 		if name~="" then
-			if type==1 and inv:room_for_item("main", pay)==false then minetest.chat_send_player(pname, "Error: The owner's stock is full, can't receive, exchange aborted.") return end
+			if type==1 and inv:room_for_item("main", pay)==false then
+				minetest.chat_send_player(pname, S("Error: The owner's stock is full, can't receive, exchange aborted."))
+				return
+			end
 			if meta:get_int("ghost") ~=1 then
 			   -- transition shops to ghost inventory.
 			   for i=1,4 do
@@ -211,7 +217,7 @@ smartshop.process_trade=function(pos, player, pname, pressed)
 			   end
 			end
 			if type==1 and inv:contains_item("main", stack)==false then
-			   minetest.chat_send_player(pname, "Error: "..smartshop.get_human_name(name).." is sold out.")
+			   minetest.chat_send_player(pname, S("Error: @1 is sold out.", smartshop.get_human_name(name)))
 			   smartshop.send_digiline_out_of_storage(pos, name, n)
 			   if not meta:get_int("alerted") or meta:get_int("alerted") == 0 then
 				  meta:set_int("alerted",1) -- Do not alert twice
@@ -219,8 +225,14 @@ smartshop.process_trade=function(pos, player, pname, pressed)
 			   end
 			   return
 			end
-			if not pinv:contains_item("main", pay) then minetest.chat_send_player(pname, "Error: You don't have enough in your inventory to buy this, exchange aborted.") return end
-			if not pinv:room_for_item("main", stack) then minetest.chat_send_player(pname, "Error: Your inventory is full, exchange aborted.") return end
+			if not pinv:contains_item("main", pay) then
+				minetest.chat_send_player(pname, S("Error: You don't have enough in your inventory to buy this, exchange aborted."))
+				return
+			end
+			if not pinv:room_for_item("main", stack) then
+				minetest.chat_send_player(pname, S("Error: Your inventory is full, exchange aborted."))
+				return
+			end
 			if type == 0 then
 				pinv:remove_item("main", pay)
 				pinv:add_item("main", stack)
@@ -247,15 +259,15 @@ smartshop.toggle_limit=function(pos, pname)
 	if not is_creative(pname) then
 		meta:set_int("type", 1)
 		meta:set_int("creative", 0)
-		minetest.chat_send_player(pname, "You are not allowed to make a creative shop!")
+		minetest.chat_send_player(pname, S("You are not allowed to make a creative shop!"))
 		return
 	end
 	if meta:get_int("type")==0 then
 		meta:set_int("type",1)
-		minetest.chat_send_player(pname, "Your stock is limited")
+		minetest.chat_send_player(pname, S("Your stock is limited"))
 	else
 		meta:set_int("type",0)
-		minetest.chat_send_player(pname, "Your stock is unlimited")
+		minetest.chat_send_player(pname, S("Your stock is unlimited"))
 	end
 end
 
@@ -268,7 +280,7 @@ smartshop.update_info=function(pos)
 	local inv = meta:get_inventory()
 	local owner=meta:get_string("owner")
 	if meta:get_int("type")==0 then
-		meta:set_string("infotext","(Smartshop by " .. owner ..") Stock is unlimited")
+		meta:set_string("infotext", S("(Smartshop by @1) Stock is unlimited", owner))
 		return false
 	end
 	local name=""
@@ -311,11 +323,11 @@ smartshop.update_info=function(pos)
 		end
 	end
 		meta:set_string("infotext",
-		"(Smartshop by " .. owner ..") Purchases left:\n"
-		.. stuff.buy1 ..  stuff.name1
-		.. stuff.buy2 ..  stuff.name2
-		.. stuff.buy3 ..  stuff.name3
-		.. stuff.buy4 ..  stuff.name4
+			S("(Smartshop by @1) Purchases left:\n@2", owner,
+			stuff.buy1 ..  stuff.name1
+			.. stuff.buy2 ..  stuff.name2
+			.. stuff.buy3 ..  stuff.name3
+			.. stuff.buy4 ..  stuff.name4)
 		)
 end
 
@@ -404,9 +416,9 @@ smartshop.get_formspec=function(pos, player, force_customer)
 		local gui = ""
 		.."size[8,11]"
 		..smartshop.customer_button_formspec
-		.."label[0,0.2;Item:]"
-		.."label[0,1.2;Price:]"
-		.."label[0,2.2;Channel:]"
+		.."label[0,0.2;" .. S("Item:") .. "]"
+		.."label[0,1.2;" .. S("Price:") .. "]"
+		.."label[0,2.2;" .. S("Channel:") .. "]"
 		.."list[nodemeta:" .. spos .. ";give1;2,0;1,1;]"
 		.."list[nodemeta:" .. spos .. ";pay1;2,1;1,1;]"
 		.."list[nodemeta:" .. spos .. ";give2;3,0;1,1;]"
@@ -418,9 +430,9 @@ smartshop.get_formspec=function(pos, player, force_customer)
 		.."field[2.2,2.2;6,1;channel;;".. meta:get_string("channel") .."]"
 		if creative==1 then
 			if meta:get_int("type")==0 then 
-				gui = gui .."label[0.5,-0.4;Your stock is unlimited because you have creative or give]"
+				gui = gui .."label[0.5,-0.4;" .. S("Your stock is unlimited because you have creative or give") .. "]"
 			end
-			gui = gui.."button[6,1;2.2,1;tooglelime;Toggle limit]"
+			gui = gui.."button[6,1;2.2,1;tooglelime;" .. S("Toggle limit") .. "]"
 		end
 		gui=gui
 		.."list[nodemeta:" .. spos .. ";main;0,3;8,4;]"
@@ -433,8 +445,8 @@ smartshop.get_formspec=function(pos, player, force_customer)
 		local gui = ""
 		.."size[8,6]"
 		.."list[current_player;main;0,2.2;8,4;]"
-		.."label[0,0.2;Item:]"
-		.."label[0,1.2;Price:]"
+		.."label[0,0.2;" .. S("Item:") .. "]"
+		.."label[0,1.2;" .. S("Price:") .. "]"
 		.."item_image[2,0;1,1;".. inv:get_stack("give1",1):to_string() .. "]"
 		.."item_image_button[2,1;1,1;".. inv:get_stack("pay1",1):to_string() ..";buy1;]"
 		.."item_image[3,0;1,1;".. inv:get_stack("give2",1):to_string() .. "]"
@@ -482,7 +494,7 @@ end
 
 -- define ui and event handler of smartshop, depending on if active formspec is installed
 if minetest.get_modpath( "formspecs" ) then
-	smartshop.customer_button_formspec = "button[6,0;1.5,1;customer;Customer]"
+	smartshop.customer_button_formspec = "button[6,0;1.5,1;customer;".. S("Customer") .. "]"
 	smartshop.open_formspec=function(pos, player)
 		if not pos then
 			minetest.log("error", "No position provided when opening formspec")
@@ -508,7 +520,8 @@ if minetest.get_modpath( "formspecs" ) then
 				if unchanged then
 					smartshop.process_trade(pos, player, pname, fields)
 				else
-					minetest.chat_send_player(pname, "Warn: Offer of slot #" .. index .. " is changed, please confirm updated price. Click again to perform trade.")
+					minetest.chat_send_player(pname,
+						S("Warn: Offer of slot #@1 is changed, please confirm updated price. Click again to perform trade.", index))
 					minetest.update_form(pname, smartshop.get_formspec(pos, player, force_customer))
 				end
 			else
@@ -522,7 +535,7 @@ if minetest.get_modpath( "formspecs" ) then
 		minetest.create_form(nil, pname, gui, on_event)
 	end
 else
-	smartshop.customer_button_formspec = "button_exit[6,0;1.5,1;customer;Customer]"
+	smartshop.customer_button_formspec = "button_exit[6,0;1.5,1;customer;".. S("Customer") .. "]"
 	smartshop.open_formspec=function(pos,player)
 		smartshop.showform(pos,player)
 	end
@@ -802,24 +815,24 @@ end
 
 
 minetest.register_chatcommand("smstats", {
-	description = "Get number of items sold",
+	description = S("Get statstics of items sold by smartshop"),
 	params = "<item_name>",
 	func = function(plname, params)
 		local name = params:match("(%S+)")
 		if not (name) then
-			return false, "Usage: /smstats <itemname>"
+			return false, S("Usage: @1", "/smstats <itemname>")
 		end
 		if not smartshop.itemstats[name] then
 		   return false, "No stats on "..name
 		end
 		sum = smartshop.get_item_count(name)
-		minetest.chat_send_player(plname, "Number of items: "..sum)
-		minetest.chat_send_player(plname, "Number of shops offering item: "..smartshop.get_shop_count(name))
+		minetest.chat_send_player(plname, S("Number of items: @1", sum))
+		minetest.chat_send_player(plname, S("Number of shops offering item: @1", smartshop.get_shop_count(name)))
 		if sum == 0 then
 		   return
 		end
 		price = smartshop.get_item_price(name)
-		minetest.chat_send_player(plname, "Average price: "..string.format("%.3f",price))
+		minetest.chat_send_player(plname, S("Average price: @1", string.format("%.3f",price)))
 		return true
 --		local ok, e = xban.ban_player(plname, name, nil, reason)
 --		return ok, ok and ("Banned %s."):format(plname) or e
@@ -829,7 +842,7 @@ minetest.register_chatcommand("smstats", {
 smartshop.report = function ()
    local file = io.open(minetest.get_worldpath().."/smartshop_report.txt", "w")
    if not file then
-      return false, "could not write to file"
+      return false, S("could not write to file")
    end
    for i,k in pairs(smartshop.itemstats) do
       local count = smartshop.get_item_count(i)
@@ -840,7 +853,7 @@ smartshop.report = function ()
 end
 
 minetest.register_chatcommand("smreport", {			      
-	description = "Get number of items sold",
+	description = S("Save stastics to disk manually"),
 	func = function(plname, params)
 	   smartshop.report()
 	end,
